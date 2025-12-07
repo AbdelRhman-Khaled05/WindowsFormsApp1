@@ -31,7 +31,7 @@ namespace TaskManagementApp
                 lstTasks.Items.Clear();
                 foreach (var task in tasks)
                 {
-                    lstTasks.Items.Add($"{task.TaskID} - {task.Title} [{task.Task_Status}]");
+                    lstTasks.Items.Add($"{task.TaskID} - {task.Title} [{task.TaskStatus}]");
                 }
 
                 lblTaskCount.Text = $"Your Tasks: {tasks.Count}";
@@ -68,7 +68,7 @@ namespace TaskManagementApp
                     txtTaskID.Text = selectedTask.TaskID;
                     txtTitle.Text = selectedTask.Title;
                     txtDescription.Text = selectedTask.Description;
-                    txtStatus.Text = selectedTask.Task_Status;
+                    txtStatus.Text = selectedTask.TaskStatus;
                     txtDueDate.Text = selectedTask.DueDate?.ToShortDateString() ?? "N/A";
 
                     LoadSteps(selectedTask);
@@ -145,11 +145,11 @@ namespace TaskManagementApp
                     bool allStepsCompleted = selectedTask.Steps.All(s => s.StepStatus == "Completed");
                     if (allStepsCompleted)
                     {
-                        selectedTask.Task_Status = "Completed";
+                        selectedTask.TaskStatus = "Completed";
                     }
-                    else if (selectedTask.Task_Status == "Pending")
+                    else if (selectedTask.TaskStatus == "Pending")
                     {
-                        selectedTask.Task_Status = "In Progress";
+                        selectedTask.TaskStatus = "In Progress";
                     }
 
                     // Update in database
@@ -192,7 +192,7 @@ namespace TaskManagementApp
 
             try
             {
-                selectedTask.Task_Status = "Completed";
+                selectedTask.TaskStatus = "Completed";
                 var filter = Builders<TaskItem>.Filter.Eq(t => t.TaskID, selectedTask.TaskID);
                 tasksCollection.ReplaceOne(filter, selectedTask);
 

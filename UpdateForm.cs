@@ -18,8 +18,11 @@ namespace TaskManagementApp
             try
             {
                 _db = MongoConnection.GetDatabase();
-                _users = _db.GetCollection<BsonDocument>("users");
-                _tasks = _db.GetCollection<BsonDocument>("tasks");
+
+                // Ensure correct collection names
+                _users = _db.GetCollection<BsonDocument>("Users");
+                _tasks = _db.GetCollection<BsonDocument>("Tasks");
+
                 LoadUsers();
                 LoadTasks();
             }
@@ -34,10 +37,11 @@ namespace TaskManagementApp
             try
             {
                 cmbUsers.Items.Clear();
-                var users = _users.Find(new BsonDocument()).ToList();
-                foreach (var user in users)
+                var allUsers = _users.Find(new BsonDocument()).ToList();
+
+                foreach (var user in allUsers)
                 {
-                    cmbUsers.Items.Add(user["UserID"].AsString);
+                    cmbUsers.Items.Add(user.GetValue("UserID", "").ToString());
                 }
             }
             catch (Exception ex)
@@ -51,10 +55,11 @@ namespace TaskManagementApp
             try
             {
                 cmbTasks.Items.Clear();
-                var tasks = _tasks.Find(new BsonDocument()).ToList();
-                foreach (var task in tasks)
+                var allTasks = _tasks.Find(new BsonDocument()).ToList();
+
+                foreach (var task in allTasks)
                 {
-                    cmbTasks.Items.Add(task["TaskID"].AsString);
+                    cmbTasks.Items.Add(task.GetValue("TaskID", "").ToString());
                 }
             }
             catch (Exception ex)
@@ -98,7 +103,12 @@ namespace TaskManagementApp
 
                 if (task != null)
                 {
-                    txtTaskUserID.Text = task.GetValue("UserID", "").AsString;
+                    // UserID is ObjectId — convert safely
+                    if (task.Contains("UserID") && task["UserID"].IsObjectId)
+                        txtTaskUserID.Text = task["UserID"].AsObjectId.ToString();
+                    else
+                        txtTaskUserID.Text = "";
+
                     txtTaskTitle.Text = task.GetValue("Title", "").AsString;
                     txtTaskDescription.Text = task.GetValue("Description", "").AsString;
                     txtTaskStatus.Text = task.GetValue("TaskStatus", "").AsString;
@@ -114,7 +124,7 @@ namespace TaskManagementApp
         {
             if (cmbUsers.SelectedItem == null)
             {
-                MessageBox.Show("Please select a user to update.");
+                MessageBox.Show("Select a user to update.");
                 return;
             }
 
@@ -122,12 +132,14 @@ namespace TaskManagementApp
             {
                 string userID = cmbUsers.SelectedItem.ToString();
                 var filter = Builders<BsonDocument>.Filter.Eq("UserID", userID);
+
                 var update = Builders<BsonDocument>.Update
                     .Set("Username", txtUsername.Text)
                     .Set("Password", txtPassword.Text)
                     .Set("Role", txtRole.Text);
 
                 _users.UpdateOne(filter, update);
+
                 MessageBox.Show("User updated successfully!");
             }
             catch (Exception ex)
@@ -140,7 +152,7 @@ namespace TaskManagementApp
         {
             if (cmbTasks.SelectedItem == null)
             {
-                MessageBox.Show("Please select a task to update.");
+                MessageBox.Show("Select a task to update.");
                 return;
             }
 
@@ -148,13 +160,23 @@ namespace TaskManagementApp
             {
                 string taskID = cmbTasks.SelectedItem.ToString();
                 var filter = Builders<BsonDocument>.Filter.Eq("TaskID", taskID);
+
+                // Convert UserID to ObjectId (REQUIRED by your schema)
+                ObjectId userIdObj;
+                if (!ObjectId.TryParse(txtTaskUserID.Text, out userIdObj))
+                {
+                    MessageBox.Show("Invalid UserID! Enter a valid ObjectId.");
+                    return;
+                }
+
                 var update = Builders<BsonDocument>.Update
-                    .Set("UserID", txtTaskUserID.Text)
+                    .Set("UserID", userIdObj)
                     .Set("Title", txtTaskTitle.Text)
                     .Set("Description", txtTaskDescription.Text)
                     .Set("TaskStatus", txtTaskStatus.Text);
 
                 _tasks.UpdateOne(filter, update);
+
                 MessageBox.Show("Task updated successfully!");
             }
             catch (Exception ex)
@@ -167,7 +189,7 @@ namespace TaskManagementApp
         {
             LoadUsers();
             LoadTasks();
-            MessageBox.Show("Data refreshed!");
+            MessageBox.Show("Data refreshed.");
         }
     }
 }

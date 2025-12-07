@@ -113,9 +113,9 @@ namespace TaskManagementApp
 
             // Overall Statistics
             int totalTasks = tasks.Count;
-            int pendingTasks = tasks.Count(t => t.Task_Status == "Pending");
-            int inProgressTasks = tasks.Count(t => t.Task_Status == "In Progress");
-            int completedTasks = tasks.Count(t => t.Task_Status == "Completed");
+            int pendingTasks = tasks.Count(t => t.TaskStatus == "Pending");
+            int inProgressTasks = tasks.Count(t => t.TaskStatus == "In Progress");
+            int completedTasks = tasks.Count(t => t.TaskStatus == "Completed");
 
             report.AppendLine("OVERALL STATISTICS:");
             report.AppendLine("───────────────────────────────────────────────");
@@ -151,7 +151,7 @@ namespace TaskManagementApp
                     report.AppendLine($"\nTask ID: {task.TaskID}");
                     report.AppendLine($"Title: {task.Title}");
                     report.AppendLine($"Assigned To: {task.UserID}");
-                    report.AppendLine($"Status: {task.Task_Status}");
+                    report.AppendLine($"Status: {task.TaskStatus}");
                     report.AppendLine($"Steps: {taskCompletedSteps}/{taskSteps} completed");
                     if (task.DueDate.HasValue)
                     {

@@ -5,130 +5,152 @@ using System.Collections.Generic;
 
 namespace TaskManagementApp.Models
 {
-    // User Collection
+    // ===========================
+    // USER COLLECTION
+    // ===========================
+
     public class User
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
 
-        [BsonElement("userID")]
+        // MATCH InsertForm: "UserID"
+        [BsonElement("UserID")]
         public string UserID { get; set; }
 
-        [BsonElement("username")]
+        [BsonElement("Username")]
         public string Username { get; set; }
 
-        [BsonElement("password")]
+        [BsonElement("Password")]
         public string Password { get; set; }
 
-        [BsonElement("role")]
+        [BsonElement("Role")]
         public string Role { get; set; }
     }
 
-    // Embedded Step within Task
+    // ===========================
+    // STEP (EMBEDDED IN TASK)
+    // ===========================
+
     public class Step
     {
-        [BsonElement("stepID")]
+        [BsonElement("StepID")]
         public string StepID { get; set; }
 
-        [BsonElement("stepDescription")]
+        [BsonElement("StepDescription")]
         public string StepDescription { get; set; }
 
-        [BsonElement("stepStatus")]
-        public string StepStatus { get; set; } // Pending, Completed
+        [BsonElement("StepStatus")]
+        public string StepStatus { get; set; }
 
-        [BsonElement("signedOff")]
+        [BsonElement("SignedOff")]
         public SignedOff SignedOff { get; set; }
     }
 
-    // Embedded SignedOff within Step
+    // ===========================
+    // SIGNEDOFF (EMBEDDED IN STEP)
+    // ===========================
+
     public class SignedOff
     {
-        [BsonElement("userID")]
+        [BsonElement("UserID")]
         public string UserID { get; set; }
 
-        [BsonElement("status")]
+        [BsonElement("Status")]
         public string Status { get; set; }
 
-        [BsonElement("date")]
+        // Allow nullable dates
+        [BsonElement("Date")]
         public DateTime? Date { get; set; }
     }
 
-    // Task Collection (with embedded Steps)
+    // ===========================
+    // TASK COLLECTION
+    // ===========================
+
     public class TaskItem
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
 
-        [BsonElement("taskID")]
+        // MATCH InsertForm fields:
+        [BsonElement("TaskID")]
         public string TaskID { get; set; }
 
-        [BsonElement("userID")]
+        [BsonElement("UserID")]
         public string UserID { get; set; }
 
-        [BsonElement("title")]
+        [BsonElement("Title")]
         public string Title { get; set; }
 
-        [BsonElement("description")]
+        [BsonElement("Description")]
         public string Description { get; set; }
 
-        [BsonElement("task_status")]
-        public string Task_Status { get; set; } // Pending, In Progress, Completed
+        // MATCH InsertForm: "TaskStatus"
+        [BsonElement("TaskStatus")]
+        public string TaskStatus { get; set; }
 
         [BsonElement("steps")]
         public List<Step> Steps { get; set; } = new List<Step>();
 
-        [BsonElement("createdDate")]
+        [BsonElement("CreatedDate")]
         public DateTime CreatedDate { get; set; }
 
-        [BsonElement("dueDate")]
+        [BsonElement("DueDate")]
         public DateTime? DueDate { get; set; }
     }
 
-    // Report Collection
+    // ===========================
+    // REPORT COLLECTION
+    // ===========================
+
     public class Report
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
 
-        [BsonElement("reportID")]
+        [BsonElement("ReportID")]
         public string ReportID { get; set; }
 
-        [BsonElement("taskID")]
+        [BsonElement("TaskID")]
         public string TaskID { get; set; }
 
-        [BsonElement("progressData")]
+        [BsonElement("ProgressData")]
         public string ProgressData { get; set; }
 
-        [BsonElement("generatedDate")]
+        [BsonElement("GeneratedDate")]
         public DateTime GeneratedDate { get; set; }
     }
 
-    // AuditLog Collection
+    // ===========================
+    // AUDIT LOG COLLECTION
+    // ===========================
+
     public class AuditLog
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
 
-        [BsonElement("logID")]
+        [BsonElement("LogID")]
         public string LogID { get; set; }
 
-        [BsonElement("userID")]
+        [BsonElement("UserID")]
         public string UserID { get; set; }
 
-        [BsonElement("taskID")]
+        [BsonElement("TaskID")]
         public string TaskID { get; set; }
 
-        [BsonElement("stepID")]
+        [BsonElement("StepID")]
         public string StepID { get; set; }
 
-        [BsonElement("action")]
+        [BsonElement("Action")]
         public string Action { get; set; }
 
-        [BsonElement("timestamp")]
+        [BsonElement("Timestamp")]
         public DateTime Timestamp { get; set; }
     }
 }
