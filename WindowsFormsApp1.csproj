@@ -138,6 +138,18 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AdminDashboard.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AdminDashboard.Designer.cs">
+      <DependentUpon>AdminDashboard.cs</DependentUpon>
+    </Compile>
+    <Compile Include="AuditLogsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AuditLogsForm.Designer.cs">
+      <DependentUpon>AuditLogsForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="DeleteForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -184,11 +196,23 @@
     <Compile Include="ReportForm.Designer.cs">
       <DependentUpon>ReportForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="SignUpForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SignUpForm.Designer.cs">
+      <DependentUpon>SignUpForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="UpdateForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="UpdateForm.Designer.cs">
       <DependentUpon>UpdateForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UserDashboard.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UserDashboard.Designer.cs">
+      <DependentUpon>UserDashboard.cs</DependentUpon>
     </Compile>
     <Compile Include="ViewTaskForm.cs">
       <SubType>Form</SubType>
@@ -196,6 +220,12 @@
     <Compile Include="ViewTaskForm.Designer.cs">
       <DependentUpon>ViewTaskForm.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="AdminDashboard.resx">
+      <DependentUpon>AdminDashboard.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="AuditLogsForm.resx">
+      <DependentUpon>AuditLogsForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="DeleteForm.resx">
       <DependentUpon>DeleteForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -226,8 +256,14 @@
     <EmbeddedResource Include="ReportForm.resx">
       <DependentUpon>ReportForm.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="SignUpForm.resx">
+      <DependentUpon>SignUpForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="UpdateForm.resx">
       <DependentUpon>UpdateForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UserDashboard.resx">
+      <DependentUpon>UserDashboard.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="ViewTaskForm.resx">
       <DependentUpon>ViewTaskForm.cs</DependentUpon>

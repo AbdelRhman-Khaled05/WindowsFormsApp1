@@ -1,49 +1,59 @@
-﻿using DnsClient.Protocol;
-using MongoDB.Driver;
-using System;
-using System.ComponentModel.Composition.Primitives;
-using System.Linq;
+﻿using System;
 using System.Text;
 using System.Windows.Forms;
-using TaskManagementApp.Models;
+using MongoDB.Bson;
+using MongoDB.Driver;
+using System.Linq;
 
 namespace TaskManagementApp
 {
     public partial class ReportForm : Form
     {
-        private IMongoCollection<TaskItem> tasksCollection;
-        private IMongoCollection<Report> reportsCollection;
-        private IMongoCollection<User> usersCollection;
-        private IMongoCollection<AuditLog> auditCollection;
+        private IMongoDatabase _db;
+        private IMongoCollection<BsonDocument> _tasks;
+        private IMongoCollection<BsonDocument> _reports;
+        private IMongoCollection<BsonDocument> _users;
+        private IMongoCollection<BsonDocument> _auditLogs;
 
         public ReportForm()
         {
             InitializeComponent();
-            var db = MongoConnection.GetDatabase();
-            tasksCollection = db.GetCollection<TaskItem>("Tasks");
-            reportsCollection = db.GetCollection<Report>("Reports");
-            usersCollection = db.GetCollection<User>("Users");
-            auditCollection = db.GetCollection<AuditLog>("AuditLogs");
-            LoadUsers();
+
+            try
+            {
+                _db = MongoConnection.GetDatabase();
+                _tasks = _db.GetCollection<BsonDocument>("Tasks");
+                _reports = _db.GetCollection<BsonDocument>("Reports");
+                _users = _db.GetCollection<BsonDocument>("Users");
+                _auditLogs = _db.GetCollection<BsonDocument>("AuditLogs");
+                LoadUsers();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error connecting to database: " + ex.Message);
+            }
         }
 
         private void LoadUsers()
         {
             try
             {
-                var users = usersCollection.Find(_ => true).ToList();
+                var users = _users.Find(new BsonDocument()).ToList();
                 cmbUser.Items.Clear();
                 cmbUser.Items.Add("All Users");
+
                 foreach (var user in users)
                 {
-                    cmbUser.Items.Add($"{user.UserID} - {user.Username}");
+                    string userID = user.GetValue("UserID", "").ToString();
+                    string username = user.GetValue("Username", "").ToString();
+                    cmbUser.Items.Add($"{userID} - {username}");
                 }
+
                 cmbUser.SelectedIndex = 0;
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error loading users: " + ex.Message, "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error loading users: " + ex.Message);
             }
         }
 
@@ -52,33 +62,35 @@ namespace TaskManagementApp
             try
             {
                 string selectedUser = cmbUser.SelectedItem.ToString();
-                string userID = null;
+                ObjectId? userObjectId = null;
 
                 if (selectedUser != "All Users")
                 {
-                    userID = selectedUser.Split('-')[0].Trim();
+                    string userID = selectedUser.Split('-')[0].Trim();
+                    var userFilter = Builders<BsonDocument>.Filter.Eq("UserID", userID);
+                    var user = _users.Find(userFilter).FirstOrDefault();
+
+                    if (user != null && user.Contains("_id"))
+                    {
+                        userObjectId = user["_id"].AsObjectId;
+                    }
                 }
 
-                var report = GenerateReport(userID);
+                var report = GenerateReport(userObjectId);
                 txtReport.Text = report;
 
-                // Save report to database
-                SaveReport(userID, report);
+                SaveReport(selectedUser, report);
+                LogAudit(LoginForm.LoggedInUserID, "Generate Report", $"Generated report for: {selectedUser}");
 
-                // Log audit
-                LogAudit(LoginForm.LoggedInUserID, null, null, "Generate Report");
-
-                MessageBox.Show("Report generated successfully!", "Success",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Report generated successfully!");
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error generating report: " + ex.Message, "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error generating report: " + ex.Message);
             }
         }
 
-        private string GenerateReport(string userID)
+        private string GenerateReport(ObjectId? userObjectId)
         {
             StringBuilder report = new StringBuilder();
             report.AppendLine("═══════════════════════════════════════════════");
@@ -87,9 +99,9 @@ namespace TaskManagementApp
             report.AppendLine($"Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
             report.AppendLine($"Generated By: {LoginForm.LoggedInUsername}");
 
-            if (userID != null)
+            if (userObjectId.HasValue)
             {
-                report.AppendLine($"User Filter: {userID}");
+                report.AppendLine($"User Filter: {userObjectId.Value}");
             }
             else
             {
@@ -99,23 +111,23 @@ namespace TaskManagementApp
             report.AppendLine("═══════════════════════════════════════════════\n");
 
             // Get tasks
-            FilterDefinition<TaskItem> filter;
-            if (userID != null)
+            FilterDefinition<BsonDocument> filter;
+            if (userObjectId.HasValue)
             {
-                filter = Builders<TaskItem>.Filter.Eq(t => t.UserID, userID);
+                filter = Builders<BsonDocument>.Filter.Eq("UserID", userObjectId.Value);
             }
             else
             {
-                filter = Builders<TaskItem>.Filter.Empty;
+                filter = Builders<BsonDocument>.Filter.Empty;
             }
 
-            var tasks = tasksCollection.Find(filter).ToList();
+            var tasks = _tasks.Find(filter).ToList();
 
             // Overall Statistics
             int totalTasks = tasks.Count;
-            int pendingTasks = tasks.Count(t => t.TaskStatus == "Pending");
-            int inProgressTasks = tasks.Count(t => t.TaskStatus == "In Progress");
-            int completedTasks = tasks.Count(t => t.TaskStatus == "Completed");
+            int pendingTasks = tasks.Count(t => t.GetValue("TaskStatus", "").ToString() == "Pending");
+            int inProgressTasks = tasks.Count(t => t.GetValue("TaskStatus", "").ToString() == "In Progress");
+            int completedTasks = tasks.Count(t => t.GetValue("TaskStatus", "").ToString() == "Completed");
 
             report.AppendLine("OVERALL STATISTICS:");
             report.AppendLine("───────────────────────────────────────────────");
@@ -127,8 +139,25 @@ namespace TaskManagementApp
             report.AppendLine();
 
             // Step Statistics
-            int totalSteps = tasks.Sum(t => t.Steps?.Count ?? 0);
-            int completedSteps = tasks.Sum(t => t.Steps?.Count(s => s.StepStatus == "Completed") ?? 0);
+            int totalSteps = 0;
+            int completedSteps = 0;
+
+            foreach (var task in tasks)
+            {
+                if (task.Contains("Steps") && task["Steps"].IsBsonArray)
+                {
+                    var steps = task["Steps"].AsBsonArray;
+                    totalSteps += steps.Count;
+
+                    foreach (var step in steps)
+                    {
+                        if (step.AsBsonDocument.GetValue("StepStatus", "").ToString() == "Completed")
+                        {
+                            completedSteps++;
+                        }
+                    }
+                }
+            }
 
             report.AppendLine("STEP COMPLETION:");
             report.AppendLine("───────────────────────────────────────────────");
@@ -145,18 +174,21 @@ namespace TaskManagementApp
 
                 foreach (var task in tasks)
                 {
-                    int taskSteps = task.Steps?.Count ?? 0;
-                    int taskCompletedSteps = task.Steps?.Count(s => s.StepStatus == "Completed") ?? 0;
+                    int taskSteps = 0;
+                    int taskCompletedSteps = 0;
 
-                    report.AppendLine($"\nTask ID: {task.TaskID}");
-                    report.AppendLine($"Title: {task.Title}");
-                    report.AppendLine($"Assigned To: {task.UserID}");
-                    report.AppendLine($"Status: {task.TaskStatus}");
-                    report.AppendLine($"Steps: {taskCompletedSteps}/{taskSteps} completed");
-                    if (task.DueDate.HasValue)
+                    if (task.Contains("Steps") && task["Steps"].IsBsonArray)
                     {
-                        report.AppendLine($"Due Date: {task.DueDate.Value:yyyy-MM-dd}");
+                        var steps = task["Steps"].AsBsonArray;
+                        taskSteps = steps.Count;
+                        taskCompletedSteps = steps.Count(s => s.AsBsonDocument.GetValue("StepStatus", "").ToString() == "Completed");
                     }
+
+                    report.AppendLine($"\nTask ID: {task.GetValue("TaskID", "")}");
+                    report.AppendLine($"Title: {task.GetValue("Title", "")}");
+                    report.AppendLine($"Assigned To: {task.GetValue("UserID", "")}");
+                    report.AppendLine($"Status: {task.GetValue("TaskStatus", "")}");
+                    report.AppendLine($"Steps: {taskCompletedSteps}/{taskSteps} completed");
                 }
             }
 
@@ -173,19 +205,19 @@ namespace TaskManagementApp
             return Math.Round((double)value / total * 100, 1);
         }
 
-        private void SaveReport(string userID, string reportContent)
+        private void SaveReport(string userFilter, string reportContent)
         {
             try
             {
-                var report = new Report
+                var report = new BsonDocument
                 {
-                    ReportID = "RPT" + DateTime.Now.ToString("yyyyMMddHHmmss"),
-                    TaskID = userID ?? "ALL",
-                    ProgressData = reportContent,
-                    GeneratedDate = DateTime.Now
+                    { "ReportID", "RPT" + DateTime.Now.ToString("yyyyMMddHHmmss") },
+                    { "UserFilter", userFilter },
+                    { "ProgressData", reportContent },
+                    { "GeneratedDate", DateTime.Now }
                 };
 
-                reportsCollection.InsertOne(report);
+                _reports.InsertOne(report);
             }
             catch (Exception ex)
             {
@@ -197,8 +229,7 @@ namespace TaskManagementApp
         {
             if (string.IsNullOrWhiteSpace(txtReport.Text))
             {
-                MessageBox.Show("Please generate a report first.", "Warning",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Please generate a report first.");
                 return;
             }
 
@@ -211,14 +242,12 @@ namespace TaskManagementApp
                 if (saveDialog.ShowDialog() == DialogResult.OK)
                 {
                     System.IO.File.WriteAllText(saveDialog.FileName, txtReport.Text);
-                    MessageBox.Show("Report exported successfully!", "Success",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("Report exported successfully!");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error exporting report: " + ex.Message, "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error exporting report: " + ex.Message);
             }
         }
 
@@ -227,21 +256,20 @@ namespace TaskManagementApp
             this.Close();
         }
 
-        private void LogAudit(string userID, string taskID, string stepID, string action)
+        private void LogAudit(string userID, string action, string details)
         {
             try
             {
-                var log = new AuditLog
+                var log = new BsonDocument
                 {
-                    LogID = Guid.NewGuid().ToString(),
-                    UserID = userID,
-                    TaskID = taskID,
-                    StepID = stepID,
-                    Action = action,
-                    Timestamp = DateTime.Now
+                    { "LogID", Guid.NewGuid().ToString() },
+                    { "UserID", userID },
+                    { "Action", action },
+                    { "Details", details },
+                    { "Timestamp", DateTime.Now }
                 };
 
-                auditCollection.InsertOne(log);
+                _auditLogs.InsertOne(log);
             }
             catch (Exception ex)
             {

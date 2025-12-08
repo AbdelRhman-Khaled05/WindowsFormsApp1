@@ -11,6 +11,7 @@ namespace TaskManagementApp
         private IMongoDatabase _db;
         private IMongoCollection<BsonDocument> _users;
         private IMongoCollection<BsonDocument> _tasks;
+        private IMongoCollection<BsonDocument> _auditLogs;
 
         public DisplayForm()
         {
@@ -19,8 +20,9 @@ namespace TaskManagementApp
             try
             {
                 _db = MongoConnection.GetDatabase();
-                _users = _db.GetCollection<BsonDocument>("users");
-                _tasks = _db.GetCollection<BsonDocument>("tasks");
+                _users = _db.GetCollection<BsonDocument>("Users");  // Fixed: Capitalized
+                _tasks = _db.GetCollection<BsonDocument>("Tasks");  // Fixed: Capitalized
+                _auditLogs = _db.GetCollection<BsonDocument>("AuditLogs");
             }
             catch (Exception ex)
             {
@@ -34,7 +36,6 @@ namespace TaskManagementApp
             {
                 var users = _users.Find(new BsonDocument()).ToList();
 
-                // Create DataTable
                 DataTable dt = new DataTable();
                 dt.Columns.Add("UserID");
                 dt.Columns.Add("Username");
@@ -53,6 +54,9 @@ namespace TaskManagementApp
 
                 dgvDisplay.DataSource = dt;
                 lblCount.Text = $"Total Records: {users.Count}";
+
+                // Log audit
+                LogAudit(LoginForm.LoggedInUserID, "Display Users", "Displayed all users");
             }
             catch (Exception ex)
             {
@@ -77,9 +81,9 @@ namespace TaskManagementApp
                 foreach (var task in tasks)
                 {
                     int stepsCount = 0;
-                    if (task.Contains("steps") && task["steps"].IsBsonArray)
+                    if (task.Contains("Steps") && task["Steps"].IsBsonArray)
                     {
-                        stepsCount = task["steps"].AsBsonArray.Count;
+                        stepsCount = task["Steps"].AsBsonArray.Count;
                     }
 
                     dt.Rows.Add(
@@ -94,6 +98,9 @@ namespace TaskManagementApp
 
                 dgvDisplay.DataSource = dt;
                 lblCount.Text = $"Total Records: {tasks.Count}";
+
+                // Log audit
+                LogAudit(LoginForm.LoggedInUserID, "Display Tasks", "Displayed all tasks");
             }
             catch (Exception ex)
             {
@@ -112,7 +119,6 @@ namespace TaskManagementApp
 
             try
             {
-                // Search in tasks by Title or TaskID
                 var filter = Builders<BsonDocument>.Filter.Or(
                     Builders<BsonDocument>.Filter.Regex("Title", new BsonRegularExpression(searchText, "i")),
                     Builders<BsonDocument>.Filter.Regex("TaskID", new BsonRegularExpression(searchText, "i")),
@@ -141,6 +147,9 @@ namespace TaskManagementApp
 
                 dgvDisplay.DataSource = dt;
                 lblCount.Text = $"Search Results: {tasks.Count}";
+
+                // Log audit
+                LogAudit(LoginForm.LoggedInUserID, "Search Tasks", $"Searched for: {searchText}");
             }
             catch (Exception ex)
             {
@@ -161,6 +170,27 @@ namespace TaskManagementApp
             {
                 btnSearch_Click(sender, e);
                 e.Handled = true;
+            }
+        }
+
+        private void LogAudit(string userID, string action, string details)
+        {
+            try
+            {
+                var log = new BsonDocument
+                {
+                    { "LogID", Guid.NewGuid().ToString() },
+                    { "UserID", userID },
+                    { "Action", action },
+                    { "Details", details },
+                    { "Timestamp", DateTime.Now }
+                };
+
+                _auditLogs.InsertOne(log);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Audit log error: " + ex.Message);
             }
         }
     }

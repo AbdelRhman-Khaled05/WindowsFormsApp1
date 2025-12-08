@@ -10,6 +10,7 @@ namespace TaskManagementApp
         private IMongoDatabase _db;
         private IMongoCollection<BsonDocument> _users;
         private IMongoCollection<BsonDocument> _tasks;
+        private IMongoCollection<BsonDocument> _auditLogs;
 
         public DeleteForm()
         {
@@ -18,8 +19,9 @@ namespace TaskManagementApp
             try
             {
                 _db = MongoConnection.GetDatabase();
-                _users = _db.GetCollection<BsonDocument>("users");
-                _tasks = _db.GetCollection<BsonDocument>("tasks");
+                _users = _db.GetCollection<BsonDocument>("Users");  // Fixed: Capitalized
+                _tasks = _db.GetCollection<BsonDocument>("Tasks");  // Fixed: Capitalized
+                _auditLogs = _db.GetCollection<BsonDocument>("AuditLogs");
                 LoadUsers();
                 LoadTasks();
             }
@@ -133,6 +135,10 @@ namespace TaskManagementApp
                     string userID = cmbUsers.SelectedItem.ToString();
                     var filter = Builders<BsonDocument>.Filter.Eq("UserID", userID);
                     _users.DeleteOne(filter);
+
+                    // Log audit
+                    LogAudit(LoginForm.LoggedInUserID, "Delete User", $"Deleted user: {userID}");
+
                     MessageBox.Show("User deleted successfully!");
                     txtUserDetails.Clear();
                     LoadUsers();
@@ -166,6 +172,10 @@ namespace TaskManagementApp
                     string taskID = cmbTasks.SelectedItem.ToString();
                     var filter = Builders<BsonDocument>.Filter.Eq("TaskID", taskID);
                     _tasks.DeleteOne(filter);
+
+                    // Log audit
+                    LogAudit(LoginForm.LoggedInUserID, "Delete Task", $"Deleted task: {taskID}");
+
                     MessageBox.Show("Task deleted successfully!");
                     txtTaskDetails.Clear();
                     LoadTasks();
@@ -182,6 +192,27 @@ namespace TaskManagementApp
             LoadUsers();
             LoadTasks();
             MessageBox.Show("Data refreshed!");
+        }
+
+        private void LogAudit(string userID, string action, string details)
+        {
+            try
+            {
+                var log = new BsonDocument
+                {
+                    { "LogID", Guid.NewGuid().ToString() },
+                    { "UserID", userID },
+                    { "Action", action },
+                    { "Details", details },
+                    { "Timestamp", DateTime.Now }
+                };
+
+                _auditLogs.InsertOne(log);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Audit log error: " + ex.Message);
+            }
         }
     }
 }

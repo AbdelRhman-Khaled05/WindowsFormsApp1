@@ -1,23 +1,35 @@
 ﻿using System;
 using System.Windows.Forms;
+using MongoDB.Bson;
 using MongoDB.Driver;
-using TaskManagementApp.Models;
 
 namespace TaskManagementApp
 {
     public partial class LoginForm : Form
     {
-        private IMongoCollection<User> usersCollection;
+        private IMongoDatabase _db;
+        private IMongoCollection<BsonDocument> _users;
+        private IMongoCollection<BsonDocument> _auditLogs;
 
         public static string LoggedInUserID { get; private set; }
         public static string LoggedInUsername { get; private set; }
         public static string LoggedInRole { get; private set; }
+        public static BsonValue LoggedInObjectId { get; private set; }
 
         public LoginForm()
         {
             InitializeComponent();
-            var db = MongoConnection.GetDatabase();
-            usersCollection = db.GetCollection<User>("Users");
+
+            try
+            {
+                _db = MongoConnection.GetDatabase();
+                _users = _db.GetCollection<BsonDocument>("Users");
+                _auditLogs = _db.GetCollection<BsonDocument>("AuditLogs");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Database connection error: " + ex.Message);
+            }
         }
 
         private void btnLogin_Click(object sender, EventArgs e)
@@ -34,24 +46,25 @@ namespace TaskManagementApp
 
             try
             {
-                var filter = Builders<User>.Filter.And(
-                    Builders<User>.Filter.Eq(u => u.Username, username),
-                    Builders<User>.Filter.Eq(u => u.Password, password)
+                var filter = Builders<BsonDocument>.Filter.And(
+                    Builders<BsonDocument>.Filter.Eq("Username", username),
+                    Builders<BsonDocument>.Filter.Eq("Password", password)
                 );
 
-                var user = usersCollection.Find(filter).FirstOrDefault();
+                var user = _users.Find(filter).FirstOrDefault();
 
                 if (user != null)
                 {
-                    LoggedInUserID = user.UserID;
-                    LoggedInUsername = user.Username;
-                    LoggedInRole = user.Role;
+                    LoggedInUserID = user["UserID"].AsString;
+                    LoggedInUsername = user["Username"].AsString;
+                    LoggedInRole = user["Role"].AsString;
+                    LoggedInObjectId = user["_id"];
 
                     // Log audit
-                    LogAudit(user.UserID, null, null, "User Login");
+                    LogAudit(LoggedInUserID, "User Login", $"{LoggedInUsername} logged in");
 
-                    MessageBox.Show($"Welcome, {user.Username}!", "Success",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"Welcome, {LoggedInUsername}!\nRole: {LoggedInRole}",
+                        "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                     this.DialogResult = DialogResult.OK;
                     this.Close();
@@ -69,30 +82,10 @@ namespace TaskManagementApp
             }
         }
 
-        private void LogAudit(string userID, string taskID, string stepID, string action)
+        private void btnSignUp_Click(object sender, EventArgs e)
         {
-            try
-            {
-                var db = MongoConnection.GetDatabase();
-                var auditCollection = db.GetCollection<AuditLog>("AuditLogs");
-
-                var log = new AuditLog
-                {
-                    LogID = Guid.NewGuid().ToString(),
-                    UserID = userID,
-                    TaskID = taskID,
-                    StepID = stepID,
-                    Action = action,
-                    Timestamp = DateTime.Now
-                };
-
-                auditCollection.InsertOne(log);
-            }
-            catch (Exception ex)
-            {
-                // Silent fail for audit logs
-                Console.WriteLine("Audit log error: " + ex.Message);
-            }
+            SignUpForm signUpForm = new SignUpForm();
+            signUpForm.ShowDialog();
         }
 
         private void btnExit_Click(object sender, EventArgs e)
@@ -103,6 +96,27 @@ namespace TaskManagementApp
         private void chkShowPassword_CheckedChanged(object sender, EventArgs e)
         {
             txtPassword.UseSystemPasswordChar = !chkShowPassword.Checked;
+        }
+
+        private void LogAudit(string userID, string action, string details)
+        {
+            try
+            {
+                var log = new BsonDocument
+                {
+                    { "LogID", Guid.NewGuid().ToString() },
+                    { "UserID", userID },
+                    { "Action", action },
+                    { "Details", details },
+                    { "Timestamp", DateTime.Now }
+                };
+
+                _auditLogs.InsertOne(log);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Audit log error: " + ex.Message);
+            }
         }
     }
 }

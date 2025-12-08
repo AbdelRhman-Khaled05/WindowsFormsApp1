@@ -1,45 +1,57 @@
 ﻿using System;
 using System.Windows.Forms;
+using MongoDB.Bson;
 using MongoDB.Driver;
-using TaskManagementApp.Models;
 using System.Linq;
 
 namespace TaskManagementApp
 {
     public partial class ViewTasksForm : Form
     {
-        private IMongoCollection<TaskItem> tasksCollection;
-        private IMongoCollection<AuditLog> auditCollection;
-        private TaskItem selectedTask;
+        private IMongoDatabase _db;
+        private IMongoCollection<BsonDocument> _tasks;
+        private IMongoCollection<BsonDocument> _auditLogs;
+        private BsonDocument selectedTask;
 
         public ViewTasksForm()
         {
             InitializeComponent();
-            var db = MongoConnection.GetDatabase();
-            tasksCollection = db.GetCollection<TaskItem>("Tasks");
-            auditCollection = db.GetCollection<AuditLog>("AuditLogs");
-            LoadUserTasks();
+
+            try
+            {
+                _db = MongoConnection.GetDatabase();
+                _tasks = _db.GetCollection<BsonDocument>("Tasks");
+                _auditLogs = _db.GetCollection<BsonDocument>("AuditLogs");
+                LoadUserTasks();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error connecting to database: " + ex.Message);
+            }
         }
 
         private void LoadUserTasks()
         {
             try
             {
-                var filter = Builders<TaskItem>.Filter.Eq(t => t.UserID, LoginForm.LoggedInUserID);
-                var tasks = tasksCollection.Find(filter).ToList();
+                var userObjectId = LoginForm.LoggedInObjectId.AsObjectId;
+                var filter = Builders<BsonDocument>.Filter.Eq("UserID", userObjectId);
+                var tasks = _tasks.Find(filter).ToList();
 
                 lstTasks.Items.Clear();
                 foreach (var task in tasks)
                 {
-                    lstTasks.Items.Add($"{task.TaskID} - {task.Title} [{task.TaskStatus}]");
+                    string taskID = task.GetValue("TaskID", "").ToString();
+                    string title = task.GetValue("Title", "").ToString();
+                    string status = task.GetValue("TaskStatus", "").ToString();
+                    lstTasks.Items.Add($"{taskID} - {title} [{status}]");
                 }
 
                 lblTaskCount.Text = $"Your Tasks: {tasks.Count}";
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error loading tasks: " + ex.Message, "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error loading tasks: " + ex.Message);
             }
         }
 
@@ -51,8 +63,7 @@ namespace TaskManagementApp
                 string taskID = selectedItem.Split('-')[0].Trim();
                 LoadTaskDetails(taskID);
 
-                // Log audit
-                LogAudit(LoginForm.LoggedInUserID, taskID, null, "View Task");
+                LogAudit(LoginForm.LoggedInUserID, "View Task", $"Viewed task: {taskID}");
             }
         }
 
@@ -60,42 +71,53 @@ namespace TaskManagementApp
         {
             try
             {
-                var filter = Builders<TaskItem>.Filter.Eq(t => t.TaskID, taskID);
-                selectedTask = tasksCollection.Find(filter).FirstOrDefault();
+                var filter = Builders<BsonDocument>.Filter.Eq("TaskID", taskID);
+                selectedTask = _tasks.Find(filter).FirstOrDefault();
 
                 if (selectedTask != null)
                 {
-                    txtTaskID.Text = selectedTask.TaskID;
-                    txtTitle.Text = selectedTask.Title;
-                    txtDescription.Text = selectedTask.Description;
-                    txtStatus.Text = selectedTask.TaskStatus;
-                    txtDueDate.Text = selectedTask.DueDate?.ToShortDateString() ?? "N/A";
+                    txtTaskID.Text = selectedTask.GetValue("TaskID", "").ToString();
+                    txtTitle.Text = selectedTask.GetValue("Title", "").ToString();
+                    txtDescription.Text = selectedTask.GetValue("Description", "").ToString();
+                    txtStatus.Text = selectedTask.GetValue("TaskStatus", "").ToString();
+                    txtDueDate.Text = "N/A";
 
                     LoadSteps(selectedTask);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error loading task details: " + ex.Message, "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error loading task details: " + ex.Message);
             }
         }
 
-        private void LoadSteps(TaskItem task)
+        private void LoadSteps(BsonDocument task)
         {
             lstSteps.Items.Clear();
 
-            if (task.Steps != null && task.Steps.Count > 0)
+            if (task.Contains("Steps") && task["Steps"].IsBsonArray)
             {
-                foreach (var step in task.Steps)
+                var steps = task["Steps"].AsBsonArray;
+                foreach (var step in steps)
                 {
-                    string signOffInfo = step.SignedOff?.Status ?? "Not Signed";
-                    lstSteps.Items.Add($"{step.StepID} - {step.StepDescription} [{step.StepStatus}] - {signOffInfo}");
+                    var stepDoc = step.AsBsonDocument;
+                    string stepID = stepDoc.GetValue("StepID", "").ToString();
+                    string desc = stepDoc.GetValue("StepDescription", "").ToString();
+                    string status = stepDoc.GetValue("StepStatus", "").ToString();
+
+                    string signOffStatus = "Not Signed";
+                    if (stepDoc.Contains("SignedOff") && stepDoc["SignedOff"].IsBsonDocument)
+                    {
+                        var signOff = stepDoc["SignedOff"].AsBsonDocument;
+                        signOffStatus = signOff.GetValue("Status", "Not Signed").ToString();
+                    }
+
+                    lstSteps.Items.Add($"{stepID} - {desc} [{status}] - {signOffStatus}");
                 }
             }
             else
             {
-                lstSteps.Items.Add("No steps available for this task");
+                lstSteps.Items.Add("No steps available");
             }
         }
 
@@ -103,15 +125,13 @@ namespace TaskManagementApp
         {
             if (selectedTask == null)
             {
-                MessageBox.Show("Please select a task first.", "Warning",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Please select a task first.");
                 return;
             }
 
             if (lstSteps.SelectedItem == null)
             {
-                MessageBox.Show("Please select a step to complete.", "Warning",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Please select a step to complete.");
                 return;
             }
 
@@ -122,54 +142,64 @@ namespace TaskManagementApp
 
             try
             {
-                var step = selectedTask.Steps.FirstOrDefault(s => s.StepID == stepID);
-                if (step != null)
+                if (selectedTask.Contains("Steps") && selectedTask["Steps"].IsBsonArray)
                 {
-                    if (step.StepStatus == "Completed")
+                    var steps = selectedTask["Steps"].AsBsonArray;
+                    bool stepFound = false;
+                    bool allCompleted = true;
+
+                    for (int i = 0; i < steps.Count; i++)
                     {
-                        MessageBox.Show("This step is already completed.", "Info",
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        return;
+                        var step = steps[i].AsBsonDocument;
+                        if (step.GetValue("StepID", "").ToString() == stepID)
+                        {
+                            if (step.GetValue("StepStatus", "").ToString() == "Completed")
+                            {
+                                MessageBox.Show("This step is already completed.");
+                                return;
+                            }
+
+                            step["StepStatus"] = "Completed";
+                            step["SignedOff"] = new BsonDocument
+                            {
+                                { "UserID", LoginForm.LoggedInUserID },
+                                { "Status", "Approved" },
+                                { "Date", DateTime.Now }
+                            };
+                            stepFound = true;
+                        }
+
+                        if (step.GetValue("StepStatus", "").ToString() != "Completed")
+                        {
+                            allCompleted = false;
+                        }
                     }
 
-                    // Update step status and sign off
-                    step.StepStatus = "Completed";
-                    step.SignedOff = new SignedOff
+                    if (stepFound)
                     {
-                        UserID = LoginForm.LoggedInUserID,
-                        Status = "Approved",
-                        Date = DateTime.Now
-                    };
+                        if (allCompleted)
+                        {
+                            selectedTask["TaskStatus"] = "Completed";
+                        }
+                        else if (selectedTask.GetValue("TaskStatus", "").ToString() == "Pending")
+                        {
+                            selectedTask["TaskStatus"] = "In Progress";
+                        }
 
-                    // Check if all steps are completed
-                    bool allStepsCompleted = selectedTask.Steps.All(s => s.StepStatus == "Completed");
-                    if (allStepsCompleted)
-                    {
-                        selectedTask.TaskStatus = "Completed";
+                        var filter = Builders<BsonDocument>.Filter.Eq("TaskID", selectedTask.GetValue("TaskID", "").ToString());
+                        _tasks.ReplaceOne(filter, selectedTask);
+
+                        LogAudit(LoginForm.LoggedInUserID, "Complete Step", $"Completed step {stepID} in task {txtTaskID.Text}");
+
+                        MessageBox.Show("Step completed successfully!");
+                        LoadTaskDetails(selectedTask.GetValue("TaskID", "").ToString());
+                        LoadUserTasks();
                     }
-                    else if (selectedTask.TaskStatus == "Pending")
-                    {
-                        selectedTask.TaskStatus = "In Progress";
-                    }
-
-                    // Update in database
-                    var filter = Builders<TaskItem>.Filter.Eq(t => t.TaskID, selectedTask.TaskID);
-                    tasksCollection.ReplaceOne(filter, selectedTask);
-
-                    // Log audit
-                    LogAudit(LoginForm.LoggedInUserID, selectedTask.TaskID, stepID, "Complete Step");
-
-                    MessageBox.Show("Step completed successfully!", "Success",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                    LoadTaskDetails(selectedTask.TaskID);
-                    LoadUserTasks();
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error completing step: " + ex.Message, "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error completing step: " + ex.Message);
             }
         }
 
@@ -177,46 +207,52 @@ namespace TaskManagementApp
         {
             if (selectedTask == null)
             {
-                MessageBox.Show("Please select a task first.", "Warning",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            bool allStepsCompleted = selectedTask.Steps.All(s => s.StepStatus == "Completed");
-            if (!allStepsCompleted)
-            {
-                MessageBox.Show("All steps must be completed before submitting the task.", "Warning",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Please select a task first.");
                 return;
             }
 
             try
             {
-                selectedTask.TaskStatus = "Completed";
-                var filter = Builders<TaskItem>.Filter.Eq(t => t.TaskID, selectedTask.TaskID);
-                tasksCollection.ReplaceOne(filter, selectedTask);
+                bool allCompleted = true;
+                if (selectedTask.Contains("Steps") && selectedTask["Steps"].IsBsonArray)
+                {
+                    var steps = selectedTask["Steps"].AsBsonArray;
+                    foreach (var step in steps)
+                    {
+                        if (step.AsBsonDocument.GetValue("StepStatus", "").ToString() != "Completed")
+                        {
+                            allCompleted = false;
+                            break;
+                        }
+                    }
+                }
 
-                // Log audit
-                LogAudit(LoginForm.LoggedInUserID, selectedTask.TaskID, null, "Submit Task");
+                if (!allCompleted)
+                {
+                    MessageBox.Show("All steps must be completed before submitting.");
+                    return;
+                }
 
-                MessageBox.Show("Task submitted successfully!", "Success",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                selectedTask["TaskStatus"] = "Completed";
+                var filter = Builders<BsonDocument>.Filter.Eq("TaskID", selectedTask.GetValue("TaskID", "").ToString());
+                _tasks.ReplaceOne(filter, selectedTask);
 
+                LogAudit(LoginForm.LoggedInUserID, "Submit Task", $"Submitted task: {txtTaskID.Text}");
+
+                MessageBox.Show("Task submitted successfully!");
                 LoadUserTasks();
                 ClearDetails();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error submitting task: " + ex.Message, "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error submitting task: " + ex.Message);
             }
         }
 
         private void btnRefresh_Click(object sender, EventArgs e)
         {
             LoadUserTasks();
-            MessageBox.Show("Tasks refreshed!", "Success",
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("Tasks refreshed!");
         }
 
         private void ClearDetails()
@@ -235,21 +271,20 @@ namespace TaskManagementApp
             this.Close();
         }
 
-        private void LogAudit(string userID, string taskID, string stepID, string action)
+        private void LogAudit(string userID, string action, string details)
         {
             try
             {
-                var log = new AuditLog
+                var log = new BsonDocument
                 {
-                    LogID = Guid.NewGuid().ToString(),
-                    UserID = userID,
-                    TaskID = taskID,
-                    StepID = stepID,
-                    Action = action,
-                    Timestamp = DateTime.Now
+                    { "LogID", Guid.NewGuid().ToString() },
+                    { "UserID", userID },
+                    { "Action", action },
+                    { "Details", details },
+                    { "Timestamp", DateTime.Now }
                 };
 
-                auditCollection.InsertOne(log);
+                _auditLogs.InsertOne(log);
             }
             catch (Exception ex)
             {

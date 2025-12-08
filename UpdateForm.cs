@@ -10,6 +10,7 @@ namespace TaskManagementApp
         private IMongoDatabase _db;
         private IMongoCollection<BsonDocument> _users;
         private IMongoCollection<BsonDocument> _tasks;
+        private IMongoCollection<BsonDocument> _auditLogs;
 
         public UpdateForm()
         {
@@ -18,11 +19,9 @@ namespace TaskManagementApp
             try
             {
                 _db = MongoConnection.GetDatabase();
-
-                // Ensure correct collection names
                 _users = _db.GetCollection<BsonDocument>("Users");
                 _tasks = _db.GetCollection<BsonDocument>("Tasks");
-
+                _auditLogs = _db.GetCollection<BsonDocument>("AuditLogs");
                 LoadUsers();
                 LoadTasks();
             }
@@ -103,11 +102,10 @@ namespace TaskManagementApp
 
                 if (task != null)
                 {
-                    // UserID is ObjectId — convert safely
                     if (task.Contains("UserID") && task["UserID"].IsObjectId)
                         txtTaskUserID.Text = task["UserID"].AsObjectId.ToString();
                     else
-                        txtTaskUserID.Text = "";
+                        txtTaskUserID.Text = task.GetValue("UserID", "").ToString();
 
                     txtTaskTitle.Text = task.GetValue("Title", "").AsString;
                     txtTaskDescription.Text = task.GetValue("Description", "").AsString;
@@ -140,6 +138,8 @@ namespace TaskManagementApp
 
                 _users.UpdateOne(filter, update);
 
+                LogAudit(LoginForm.LoggedInUserID, "Update User", $"Updated user: {userID}");
+
                 MessageBox.Show("User updated successfully!");
             }
             catch (Exception ex)
@@ -161,7 +161,6 @@ namespace TaskManagementApp
                 string taskID = cmbTasks.SelectedItem.ToString();
                 var filter = Builders<BsonDocument>.Filter.Eq("TaskID", taskID);
 
-                // Convert UserID to ObjectId (REQUIRED by your schema)
                 ObjectId userIdObj;
                 if (!ObjectId.TryParse(txtTaskUserID.Text, out userIdObj))
                 {
@@ -177,6 +176,8 @@ namespace TaskManagementApp
 
                 _tasks.UpdateOne(filter, update);
 
+                LogAudit(LoginForm.LoggedInUserID, "Update Task", $"Updated task: {taskID}");
+
                 MessageBox.Show("Task updated successfully!");
             }
             catch (Exception ex)
@@ -190,6 +191,27 @@ namespace TaskManagementApp
             LoadUsers();
             LoadTasks();
             MessageBox.Show("Data refreshed.");
+        }
+
+        private void LogAudit(string userID, string action, string details)
+        {
+            try
+            {
+                var log = new BsonDocument
+                {
+                    { "LogID", Guid.NewGuid().ToString() },
+                    { "UserID", userID },
+                    { "Action", action },
+                    { "Details", details },
+                    { "Timestamp", DateTime.Now }
+                };
+
+                _auditLogs.InsertOne(log);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Audit log error: " + ex.Message);
+            }
         }
     }
 }
