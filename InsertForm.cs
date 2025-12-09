@@ -8,7 +8,6 @@ namespace TaskManagementApp
     public partial class InsertForm : Form
     {
         private IMongoDatabase _db;
-        private IMongoCollection<BsonDocument> _users;
         private IMongoCollection<BsonDocument> _tasks;
         private IMongoCollection<BsonDocument> _auditLogs;
 
@@ -19,94 +18,53 @@ namespace TaskManagementApp
             try
             {
                 _db = MongoConnection.GetDatabase();
-                _users = _db.GetCollection<BsonDocument>("Users");
                 _tasks = _db.GetCollection<BsonDocument>("Tasks");
                 _auditLogs = _db.GetCollection<BsonDocument>("AuditLogs");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error connecting to MongoDB: " + ex.Message);
+            }
         }
 
-        private void InsertForm_Load(object sender, EventArgs e)
-        {
-            // Optional initialization
-        }
-
-        // ---------------------------- INSERT TASK ONLY (No User Insert) ----------------------------
         private void btnInsertTask_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtTaskID.Text) ||
                 string.IsNullOrWhiteSpace(txtTaskUserID.Text) ||
                 string.IsNullOrWhiteSpace(txtTaskTitle.Text))
             {
-                MessageBox.Show("Please fill Task ID, User ID, and Title.");
+                MessageBox.Show("Please fill in all required fields (TaskID, UserID, Title).");
                 return;
             }
 
             try
             {
-                // Convert to ObjectId as required by your schema
-                if (!ObjectId.TryParse(txtTaskUserID.Text, out ObjectId userObjectId))
+                ObjectId userIdObj;
+                if (!ObjectId.TryParse(txtTaskUserID.Text, out userIdObj))
                 {
-                    MessageBox.Show("UserID must be a valid MongoDB ObjectId.");
+                    MessageBox.Show("Invalid UserID! Enter a valid ObjectId.");
                     return;
                 }
 
-                // ----------------- BUILD STEPS ARRAY -----------------
-                var steps = new BsonArray();
-
-                // STEP 1
-                if (!string.IsNullOrWhiteSpace(txtStep1ID.Text))
-                {
-                    steps.Add(new BsonDocument
-                    {
-                        { "StepID", txtStep1ID.Text },
-                        { "StepDescription", txtStep1Desc.Text ?? "" },
-                        { "StepStatus", "Not Started" }, // Default status
-                        { "SignedOff", new BsonDocument {
-                            { "UserID", "" },
-                            { "Status", "Not-Signed" },
-                            { "Date", BsonNull.Value }
-                        }}
-                    });
-                }
-
-                // STEP 2
-                if (!string.IsNullOrWhiteSpace(txtStep2ID.Text))
-                {
-                    steps.Add(new BsonDocument
-                    {
-                        { "StepID", txtStep2ID.Text },
-                        { "StepDescription", txtStep2Desc.Text ?? "" },
-                        { "StepStatus", "Not Started" }, // Default status
-                        { "SignedOff", new BsonDocument {
-                            { "UserID", "" },
-                            { "Status", "Not-Signed" },
-                            { "Date", BsonNull.Value }
-                        }}
-                    });
-                }
-
-                // ----------------- BUILD TASK DOCUMENT -----------------
+                // Create task document with NO Status field - defaults to "Not Started"
                 var task = new BsonDocument
                 {
                     { "TaskID", txtTaskID.Text },
-                    { "UserID", userObjectId },
+                    { "UserID", userIdObj },
                     { "Title", txtTaskTitle.Text },
-                    { "Description", txtTaskDescription.Text ?? "" },
-                    { "TaskStatus", "Not Started" }, // Default: Not Started
+                    { "Description", txtTaskDescription.Text },
+                    { "Status", "Not Started" },  // DEFAULT STATUS
                     { "DueDate", dtpDueDate.Value },
-                    { "Steps", steps }
+                    { "CreatedDate", DateTime.Now },
+                    { "Steps", new BsonArray() }  // Empty steps array
                 };
 
                 _tasks.InsertOne(task);
 
-                // Log audit
-                LogAudit(LoginForm.LoggedInUserID, "Insert Task", $"Created task: {txtTaskID.Text}");
+                LogAudit(LoginForm.LoggedInUsername, "Insert Task", $"Created task: {txtTaskID.Text}");
 
                 MessageBox.Show("Task inserted successfully!");
-
-                // Clear fields
-                ClearTaskFields();
+                ClearFields();
             }
             catch (Exception ex)
             {
@@ -114,27 +72,23 @@ namespace TaskManagementApp
             }
         }
 
-        private void ClearTaskFields()
+        private void ClearFields()
         {
             txtTaskID.Clear();
             txtTaskUserID.Clear();
             txtTaskTitle.Clear();
             txtTaskDescription.Clear();
-            txtStep1ID.Clear();
-            txtStep1Desc.Clear();
-            txtStep2ID.Clear();
-            txtStep2Desc.Clear();
             dtpDueDate.Value = DateTime.Now;
         }
 
-        private void LogAudit(string userID, string action, string details)
+        private void LogAudit(string username, string action, string details)
         {
             try
             {
                 var log = new BsonDocument
                 {
                     { "LogID", Guid.NewGuid().ToString() },
-                    { "UserID", userID },
+                    { "Username", username },  // Changed from UserID to Username
                     { "Action", action },
                     { "Details", details },
                     { "Timestamp", DateTime.Now }

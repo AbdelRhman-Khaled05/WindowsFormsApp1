@@ -26,107 +26,22 @@ namespace TaskManagementApp
 
         private void InitializeComponent()
         {
-            this.mainPanel = new Panel();
-            this.lblTitle = new Label();
-            this.lblUsername = new Label();
-            this.txtUsername = new TextBox();
-            this.lblPassword = new Label();
-            this.txtPassword = new TextBox();
-            this.chkShowPassword = new CheckBox();
-            this.btnLogin = new Button();
-            this.btnSignUp = new Button();
-            this.btnExit = new Button();
-
+            this.mainPanel = new System.Windows.Forms.Panel();
+            this.lblTitle = new System.Windows.Forms.Label();
+            this.lblUsername = new System.Windows.Forms.Label();
+            this.txtUsername = new System.Windows.Forms.TextBox();
+            this.lblPassword = new System.Windows.Forms.Label();
+            this.txtPassword = new System.Windows.Forms.TextBox();
+            this.chkShowPassword = new System.Windows.Forms.CheckBox();
+            this.btnLogin = new System.Windows.Forms.Button();
+            this.btnSignUp = new System.Windows.Forms.Button();
+            this.btnExit = new System.Windows.Forms.Button();
             this.mainPanel.SuspendLayout();
             this.SuspendLayout();
-
-            // FORM
-            this.ClientSize = new Size(500, 500);
-            this.Text = "Login - Task Management System";
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
-            this.StartPosition = FormStartPosition.CenterScreen;
-            this.BackColor = Color.FromArgb(60, 130, 200);
-
-            // MAIN PANEL
-            this.mainPanel.BackColor = Color.White;
-            this.mainPanel.Location = new Point(50, 50);
-            this.mainPanel.Size = new Size(400, 400);
-
-            // TITLE
-            this.lblTitle.Text = "🔐 Sign In";
-            this.lblTitle.Font = new Font("Segoe UI", 20, FontStyle.Bold);
-            this.lblTitle.ForeColor = Color.FromArgb(60, 130, 200);
-            this.lblTitle.AutoSize = true;
-            this.lblTitle.Location = new Point(135, 30);
-
-            // USERNAME LABEL
-            this.lblUsername.Text = "Username:";
-            this.lblUsername.Font = new Font("Segoe UI", 11, FontStyle.Bold);
-            this.lblUsername.Location = new Point(40, 100);
-            this.lblUsername.Size = new Size(100, 25);
-
-            // USERNAME TEXTBOX
-            this.txtUsername.Font = new Font("Segoe UI", 11);
-            this.txtUsername.Location = new Point(40, 130);
-            this.txtUsername.Size = new Size(320, 30);
-
-            // PASSWORD LABEL
-            this.lblPassword.Text = "Password:";
-            this.lblPassword.Font = new Font("Segoe UI", 11, FontStyle.Bold);
-            this.lblPassword.Location = new Point(40, 180);
-            this.lblPassword.Size = new Size(100, 25);
-
-            // PASSWORD TEXTBOX
-            this.txtPassword.Font = new Font("Segoe UI", 11);
-            this.txtPassword.Location = new Point(40, 210);
-            this.txtPassword.Size = new Size(320, 30);
-            this.txtPassword.UseSystemPasswordChar = true;
-
-            // SHOW PASSWORD CHECKBOX
-            this.chkShowPassword.Text = "Show Password";
-            this.chkShowPassword.Font = new Font("Segoe UI", 9);
-            this.chkShowPassword.Location = new Point(40, 245);
-            this.chkShowPassword.Size = new Size(150, 25);
-            this.chkShowPassword.CheckedChanged += new System.EventHandler(this.chkShowPassword_CheckedChanged);
-
-            // LOGIN BUTTON
-            this.btnLogin.Text = "Login";
-            this.btnLogin.Font = new Font("Segoe UI", 12, FontStyle.Bold);
-            this.btnLogin.ForeColor = Color.White;
-            this.btnLogin.BackColor = Color.FromArgb(60, 130, 200);
-            this.btnLogin.FlatStyle = FlatStyle.Flat;
-            this.btnLogin.FlatAppearance.BorderSize = 0;
-            this.btnLogin.Location = new Point(40, 285);
-            this.btnLogin.Size = new Size(150, 45);
-            this.btnLogin.Cursor = Cursors.Hand;
-            this.btnLogin.Click += new System.EventHandler(this.btnLogin_Click);
-
-            // SIGNUP BUTTON
-            this.btnSignUp.Text = "Sign Up";
-            this.btnSignUp.Font = new Font("Segoe UI", 12, FontStyle.Bold);
-            this.btnSignUp.ForeColor = Color.White;
-            this.btnSignUp.BackColor = Color.FromArgb(40, 160, 80);
-            this.btnSignUp.FlatStyle = FlatStyle.Flat;
-            this.btnSignUp.FlatAppearance.BorderSize = 0;
-            this.btnSignUp.Location = new Point(210, 285);
-            this.btnSignUp.Size = new Size(150, 45);
-            this.btnSignUp.Cursor = Cursors.Hand;
-            this.btnSignUp.Click += new System.EventHandler(this.btnSignUp_Click);
-
-            // EXIT BUTTON
-            this.btnExit.Text = "Exit";
-            this.btnExit.Font = new Font("Segoe UI", 10);
-            this.btnExit.ForeColor = Color.White;
-            this.btnExit.BackColor = Color.FromArgb(100, 100, 100);
-            this.btnExit.FlatStyle = FlatStyle.Flat;
-            this.btnExit.FlatAppearance.BorderSize = 0;
-            this.btnExit.Location = new Point(125, 345);
-            this.btnExit.Size = new Size(150, 35);
-            this.btnExit.Cursor = Cursors.Hand;
-            this.btnExit.Click += new System.EventHandler(this.btnExit_Click);
-
-            // ADD CONTROLS TO PANEL
+            // 
+            // mainPanel
+            // 
+            this.mainPanel.BackColor = System.Drawing.Color.White;
             this.mainPanel.Controls.Add(this.lblTitle);
             this.mainPanel.Controls.Add(this.lblUsername);
             this.mainPanel.Controls.Add(this.txtUsername);
@@ -136,13 +51,127 @@ namespace TaskManagementApp
             this.mainPanel.Controls.Add(this.btnLogin);
             this.mainPanel.Controls.Add(this.btnSignUp);
             this.mainPanel.Controls.Add(this.btnExit);
-
-            // ADD TO FORM
+            this.mainPanel.Location = new System.Drawing.Point(50, 50);
+            this.mainPanel.Name = "mainPanel";
+            this.mainPanel.Size = new System.Drawing.Size(400, 400);
+            this.mainPanel.TabIndex = 0;
+            // 
+            // lblTitle
+            // 
+            this.lblTitle.AutoSize = true;
+            this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 20F, System.Drawing.FontStyle.Bold);
+            this.lblTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(130)))), ((int)(((byte)(200)))));
+            this.lblTitle.Location = new System.Drawing.Point(135, 30);
+            this.lblTitle.Name = "lblTitle";
+            this.lblTitle.Size = new System.Drawing.Size(189, 46);
+            this.lblTitle.TabIndex = 0;
+            this.lblTitle.Text = "🔐 Sign In";
+            // 
+            // lblUsername
+            // 
+            this.lblUsername.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
+            this.lblUsername.Location = new System.Drawing.Point(40, 100);
+            this.lblUsername.Name = "lblUsername";
+            this.lblUsername.Size = new System.Drawing.Size(100, 25);
+            this.lblUsername.TabIndex = 1;
+            this.lblUsername.Text = "Username:";
+            // 
+            // txtUsername
+            // 
+            this.txtUsername.Font = new System.Drawing.Font("Segoe UI", 11F);
+            this.txtUsername.Location = new System.Drawing.Point(40, 130);
+            this.txtUsername.Name = "txtUsername";
+            this.txtUsername.Size = new System.Drawing.Size(320, 32);
+            this.txtUsername.TabIndex = 2;
+            // 
+            // lblPassword
+            // 
+            this.lblPassword.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
+            this.lblPassword.Location = new System.Drawing.Point(40, 180);
+            this.lblPassword.Name = "lblPassword";
+            this.lblPassword.Size = new System.Drawing.Size(100, 25);
+            this.lblPassword.TabIndex = 3;
+            this.lblPassword.Text = "Password:";
+            // 
+            // txtPassword
+            // 
+            this.txtPassword.Font = new System.Drawing.Font("Segoe UI", 11F);
+            this.txtPassword.Location = new System.Drawing.Point(40, 210);
+            this.txtPassword.Name = "txtPassword";
+            this.txtPassword.Size = new System.Drawing.Size(320, 32);
+            this.txtPassword.TabIndex = 4;
+            this.txtPassword.UseSystemPasswordChar = true;
+            // 
+            // chkShowPassword
+            // 
+            this.chkShowPassword.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.chkShowPassword.Location = new System.Drawing.Point(40, 245);
+            this.chkShowPassword.Name = "chkShowPassword";
+            this.chkShowPassword.Size = new System.Drawing.Size(150, 25);
+            this.chkShowPassword.TabIndex = 5;
+            this.chkShowPassword.Text = "Show Password";
+            // 
+            // btnLogin
+            // 
+            this.btnLogin.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(130)))), ((int)(((byte)(200)))));
+            this.btnLogin.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnLogin.FlatAppearance.BorderSize = 0;
+            this.btnLogin.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnLogin.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
+            this.btnLogin.ForeColor = System.Drawing.Color.White;
+            this.btnLogin.Location = new System.Drawing.Point(40, 285);
+            this.btnLogin.Name = "btnLogin";
+            this.btnLogin.Size = new System.Drawing.Size(150, 45);
+            this.btnLogin.TabIndex = 6;
+            this.btnLogin.Text = "Login";
+            this.btnLogin.UseVisualStyleBackColor = false;
+            this.btnLogin.Click += new System.EventHandler(this.btnLogin_Click);
+            // 
+            // btnSignUp
+            // 
+            this.btnSignUp.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(160)))), ((int)(((byte)(80)))));
+            this.btnSignUp.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnSignUp.FlatAppearance.BorderSize = 0;
+            this.btnSignUp.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnSignUp.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
+            this.btnSignUp.ForeColor = System.Drawing.Color.White;
+            this.btnSignUp.Location = new System.Drawing.Point(210, 285);
+            this.btnSignUp.Name = "btnSignUp";
+            this.btnSignUp.Size = new System.Drawing.Size(150, 45);
+            this.btnSignUp.TabIndex = 7;
+            this.btnSignUp.Text = "Sign Up";
+            this.btnSignUp.UseVisualStyleBackColor = false;
+            this.btnSignUp.Click += new System.EventHandler(this.btnSignUp_Click);
+            // 
+            // btnExit
+            // 
+            this.btnExit.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(100)))), ((int)(((byte)(100)))));
+            this.btnExit.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnExit.FlatAppearance.BorderSize = 0;
+            this.btnExit.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnExit.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.btnExit.ForeColor = System.Drawing.Color.White;
+            this.btnExit.Location = new System.Drawing.Point(125, 345);
+            this.btnExit.Name = "btnExit";
+            this.btnExit.Size = new System.Drawing.Size(150, 35);
+            this.btnExit.TabIndex = 8;
+            this.btnExit.Text = "Exit";
+            this.btnExit.UseVisualStyleBackColor = false;
+            // 
+            // LoginForm
+            // 
+            this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(130)))), ((int)(((byte)(200)))));
+            this.ClientSize = new System.Drawing.Size(500, 500);
             this.Controls.Add(this.mainPanel);
-
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
+            this.Name = "LoginForm";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.Text = "Login - Task Management System";
             this.mainPanel.ResumeLayout(false);
             this.mainPanel.PerformLayout();
             this.ResumeLayout(false);
+
         }
     }
 }

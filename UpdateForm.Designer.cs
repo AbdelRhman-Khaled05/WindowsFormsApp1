@@ -32,8 +32,8 @@ namespace TaskManagementApp
         private TextBox txtTaskTitle;
         private Label lblTaskDescription;
         private TextBox txtTaskDescription;
-        private Label lblTaskStatus;
-        private TextBox txtTaskStatus;
+        private Label lblTaskDueDate;
+        private DateTimePicker dtpDueDate;
         private Button btnUpdateTask;
 
         private Button btnRefresh;
@@ -71,8 +71,8 @@ namespace TaskManagementApp
             this.txtTaskTitle = new System.Windows.Forms.TextBox();
             this.lblTaskDescription = new System.Windows.Forms.Label();
             this.txtTaskDescription = new System.Windows.Forms.TextBox();
-            this.lblTaskStatus = new System.Windows.Forms.Label();
-            this.txtTaskStatus = new System.Windows.Forms.TextBox();
+            this.lblTaskDueDate = new System.Windows.Forms.Label();
+            this.dtpDueDate = new System.Windows.Forms.DateTimePicker();
             this.btnUpdateTask = new System.Windows.Forms.Button();
             this.header.SuspendLayout();
             this.tabControl.SuspendLayout();
@@ -90,6 +90,7 @@ namespace TaskManagementApp
             this.header.Name = "header";
             this.header.Size = new System.Drawing.Size(800, 70);
             this.header.TabIndex = 0;
+            this.header.Paint += new System.Windows.Forms.PaintEventHandler(this.header_Paint);
             // 
             // lblTitle
             // 
@@ -240,8 +241,8 @@ namespace TaskManagementApp
             this.tabTask.Controls.Add(this.txtTaskTitle);
             this.tabTask.Controls.Add(this.lblTaskDescription);
             this.tabTask.Controls.Add(this.txtTaskDescription);
-            this.tabTask.Controls.Add(this.lblTaskStatus);
-            this.tabTask.Controls.Add(this.txtTaskStatus);
+            this.tabTask.Controls.Add(this.lblTaskDueDate);
+            this.tabTask.Controls.Add(this.dtpDueDate);
             this.tabTask.Controls.Add(this.btnUpdateTask);
             this.tabTask.Location = new System.Drawing.Point(4, 32);
             this.tabTask.Name = "tabTask";
@@ -316,21 +317,21 @@ namespace TaskManagementApp
             this.txtTaskDescription.Size = new System.Drawing.Size(500, 80);
             this.txtTaskDescription.TabIndex = 7;
             // 
-            // lblTaskStatus
+            // lblTaskDueDate
             // 
-            this.lblTaskStatus.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
-            this.lblTaskStatus.Location = new System.Drawing.Point(30, 280);
-            this.lblTaskStatus.Name = "lblTaskStatus";
-            this.lblTaskStatus.Size = new System.Drawing.Size(150, 25);
-            this.lblTaskStatus.TabIndex = 8;
-            this.lblTaskStatus.Text = "Status:";
+            this.lblTaskDueDate.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
+            this.lblTaskDueDate.Location = new System.Drawing.Point(30, 280);
+            this.lblTaskDueDate.Name = "lblTaskDueDate";
+            this.lblTaskDueDate.Size = new System.Drawing.Size(150, 25);
+            this.lblTaskDueDate.TabIndex = 8;
+            this.lblTaskDueDate.Text = "Due Date:";
             // 
-            // txtTaskStatus
+            // dtpDueDate
             // 
-            this.txtTaskStatus.Location = new System.Drawing.Point(200, 280);
-            this.txtTaskStatus.Name = "txtTaskStatus";
-            this.txtTaskStatus.Size = new System.Drawing.Size(300, 30);
-            this.txtTaskStatus.TabIndex = 9;
+            this.dtpDueDate.Location = new System.Drawing.Point(200, 280);
+            this.dtpDueDate.Name = "dtpDueDate";
+            this.dtpDueDate.Size = new System.Drawing.Size(300, 30);
+            this.dtpDueDate.TabIndex = 9;
             // 
             // btnUpdateTask
             // 

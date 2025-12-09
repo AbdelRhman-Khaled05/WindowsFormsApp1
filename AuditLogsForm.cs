@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Data;
 using System.Windows.Forms;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -23,7 +22,7 @@ namespace TaskManagementApp
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error connecting to database: " + ex.Message);
+                MessageBox.Show("Error connecting to MongoDB: " + ex.Message);
             }
         }
 
@@ -31,28 +30,21 @@ namespace TaskManagementApp
         {
             try
             {
+                dgvAuditLogs.Rows.Clear();
                 var logs = _auditLogs.Find(new BsonDocument())
                     .Sort(Builders<BsonDocument>.Sort.Descending("Timestamp"))
                     .ToList();
 
-                DataTable dt = new DataTable();
-                dt.Columns.Add("Timestamp");
-                dt.Columns.Add("UserID");
-                dt.Columns.Add("Action");
-                dt.Columns.Add("Details");
-
                 foreach (var log in logs)
                 {
-                    dt.Rows.Add(
-                        log.GetValue("Timestamp", DateTime.MinValue).ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"),
-                        log.GetValue("UserID", ""),
-                        log.GetValue("Action", ""),
-                        log.GetValue("Details", "")
+                    dgvAuditLogs.Rows.Add(
+                        log.GetValue("LogID", "").ToString(),
+                        log.GetValue("Username", "").ToString(),  // Changed from UserID
+                        log.GetValue("Action", "").ToString(),
+                        log.GetValue("Details", "").ToString(),
+                        log.GetValue("Timestamp", DateTime.Now).ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss")
                     );
                 }
-
-                dgvAuditLogs.DataSource = dt;
-                lblCount.Text = $"Total Logs: {logs.Count}";
             }
             catch (Exception ex)
             {
@@ -63,12 +55,12 @@ namespace TaskManagementApp
         private void btnRefresh_Click(object sender, EventArgs e)
         {
             LoadAuditLogs();
-            MessageBox.Show("Audit logs refreshed!");
+            MessageBox.Show("Audit logs refreshed.");
         }
 
-        private void btnClose_Click(object sender, EventArgs e)
+        private void header_Paint(object sender, PaintEventArgs e)
         {
-            this.Close();
+            // Empty event handler
         }
     }
 }

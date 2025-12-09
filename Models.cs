@@ -8,16 +8,11 @@ namespace TaskManagementApp.Models
     // ===========================
     // USER COLLECTION
     // ===========================
-
     public class User
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
-
-        // MATCH InsertForm: "UserID"
-        [BsonElement("UserID")]
-        public string UserID { get; set; }
 
         [BsonElement("Username")]
         public string Username { get; set; }
@@ -32,54 +27,32 @@ namespace TaskManagementApp.Models
     // ===========================
     // STEP (EMBEDDED IN TASK)
     // ===========================
-
     public class Step
     {
         [BsonElement("StepID")]
         public string StepID { get; set; }
 
-        [BsonElement("StepDescription")]
-        public string StepDescription { get; set; }
-
-        [BsonElement("StepStatus")]
-        public string StepStatus { get; set; }
-
-        [BsonElement("SignedOff")]
-        public SignedOff SignedOff { get; set; }
-    }
-
-    // ===========================
-    // SIGNEDOFF (EMBEDDED IN STEP)
-    // ===========================
-
-    public class SignedOff
-    {
-        [BsonElement("UserID")]
-        public string UserID { get; set; }
+        [BsonElement("Description")]
+        public string Description { get; set; }
 
         [BsonElement("Status")]
-        public string Status { get; set; }
-
-        // Allow nullable dates
-        [BsonElement("Date")]
-        public DateTime? Date { get; set; }
+        public string Status { get; set; }  // "Pending" or "Completed"
     }
 
     // ===========================
     // TASK COLLECTION
     // ===========================
-
     public class TaskItem
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
 
-        // MATCH InsertForm fields:
         [BsonElement("TaskID")]
         public string TaskID { get; set; }
 
         [BsonElement("UserID")]
+        [BsonRepresentation(BsonType.ObjectId)]
         public string UserID { get; set; }
 
         [BsonElement("Title")]
@@ -88,11 +61,10 @@ namespace TaskManagementApp.Models
         [BsonElement("Description")]
         public string Description { get; set; }
 
-        // MATCH InsertForm: "TaskStatus"
-        [BsonElement("TaskStatus")]
-        public string TaskStatus { get; set; }
+        [BsonElement("Status")]
+        public string Status { get; set; }  // "Not Started", "In Progress", "Finished"
 
-        [BsonElement("steps")]
+        [BsonElement("Steps")]
         public List<Step> Steps { get; set; } = new List<Step>();
 
         [BsonElement("CreatedDate")]
@@ -105,7 +77,6 @@ namespace TaskManagementApp.Models
     // ===========================
     // REPORT COLLECTION
     // ===========================
-
     public class Report
     {
         [BsonId]
@@ -128,7 +99,6 @@ namespace TaskManagementApp.Models
     // ===========================
     // AUDIT LOG COLLECTION
     // ===========================
-
     public class AuditLog
     {
         [BsonId]
@@ -138,17 +108,14 @@ namespace TaskManagementApp.Models
         [BsonElement("LogID")]
         public string LogID { get; set; }
 
-        [BsonElement("UserID")]
-        public string UserID { get; set; }
-
-        [BsonElement("TaskID")]
-        public string TaskID { get; set; }
-
-        [BsonElement("StepID")]
-        public string StepID { get; set; }
+        [BsonElement("Username")]
+        public string Username { get; set; }  // Changed from UserID to Username
 
         [BsonElement("Action")]
         public string Action { get; set; }
+
+        [BsonElement("Details")]
+        public string Details { get; set; }
 
         [BsonElement("Timestamp")]
         public DateTime Timestamp { get; set; }

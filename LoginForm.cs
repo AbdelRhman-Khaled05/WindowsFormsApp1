@@ -9,12 +9,11 @@ namespace TaskManagementApp
     {
         private IMongoDatabase _db;
         private IMongoCollection<BsonDocument> _users;
-        private IMongoCollection<BsonDocument> _auditLogs;
 
-        public static string LoggedInUserID { get; private set; }
-        public static string LoggedInUsername { get; private set; }
-        public static string LoggedInRole { get; private set; }
-        public static BsonValue LoggedInObjectId { get; private set; }
+        public static string LoggedInUserID { get; set; }
+        public static string LoggedInUsername { get; set; }
+        public static string LoggedInRole { get; set; }
+        public static BsonValue LoggedInObjectId { get; set; }
 
         public LoginForm()
         {
@@ -24,23 +23,22 @@ namespace TaskManagementApp
             {
                 _db = MongoConnection.GetDatabase();
                 _users = _db.GetCollection<BsonDocument>("Users");
-                _auditLogs = _db.GetCollection<BsonDocument>("AuditLogs");
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Database connection error: " + ex.Message);
+                MessageBox.Show("Error connecting to MongoDB: " + ex.Message);
+                Application.Exit();
             }
         }
 
         private void btnLogin_Click(object sender, EventArgs e)
         {
             string username = txtUsername.Text.Trim();
-            string password = txtPassword.Text;
+            string password = txtPassword.Text.Trim();
 
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             {
-                MessageBox.Show("Please enter both username and password.", "Warning",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Please enter username and password.");
                 return;
             }
 
@@ -55,30 +53,22 @@ namespace TaskManagementApp
 
                 if (user != null)
                 {
-                    LoggedInUserID = user["UserID"].AsString;
-                    LoggedInUsername = user["Username"].AsString;
-                    LoggedInRole = user["Role"].AsString;
                     LoggedInObjectId = user["_id"];
-
-                    // Log audit
-                    LogAudit(LoggedInUserID, "User Login", $"{LoggedInUsername} logged in");
-
-                    MessageBox.Show($"Welcome, {LoggedInUsername}!\nRole: {LoggedInRole}",
-                        "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoggedInUserID = user["_id"].ToString();
+                    LoggedInUsername = user.GetValue("Username", "").AsString;
+                    LoggedInRole = user.GetValue("Role", "").AsString;
 
                     this.DialogResult = DialogResult.OK;
-                    this.Close();
+                    this.Hide();
                 }
                 else
                 {
-                    MessageBox.Show("Invalid username or password.", "Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Invalid username or password.");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error during login: " + ex.Message, "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Login error: " + ex.Message);
             }
         }
 
@@ -88,35 +78,10 @@ namespace TaskManagementApp
             signUpForm.ShowDialog();
         }
 
-        private void btnExit_Click(object sender, EventArgs e)
+        private void lblSignUp_Click(object sender, EventArgs e)
         {
-            Application.Exit();
-        }
-
-        private void chkShowPassword_CheckedChanged(object sender, EventArgs e)
-        {
-            txtPassword.UseSystemPasswordChar = !chkShowPassword.Checked;
-        }
-
-        private void LogAudit(string userID, string action, string details)
-        {
-            try
-            {
-                var log = new BsonDocument
-                {
-                    { "LogID", Guid.NewGuid().ToString() },
-                    { "UserID", userID },
-                    { "Action", action },
-                    { "Details", details },
-                    { "Timestamp", DateTime.Now }
-                };
-
-                _auditLogs.InsertOne(log);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Audit log error: " + ex.Message);
-            }
+            SignUpForm signUpForm = new SignUpForm();
+            signUpForm.ShowDialog();
         }
     }
 }
