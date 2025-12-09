@@ -355,6 +355,7 @@ namespace TaskManagementApp
             this.Name = "ViewTasksForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "View & Complete Tasks";
+            this.Load += new System.EventHandler(this.ViewTasksForm_Load);
             this.header.ResumeLayout(false);
             this.header.PerformLayout();
             this.leftPanel.ResumeLayout(false);

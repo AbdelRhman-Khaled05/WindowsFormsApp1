@@ -358,6 +358,7 @@ namespace TaskManagementApp
             this.Name = "UpdateForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Update Data";
+            this.Load += new System.EventHandler(this.UpdateForm_Load);
             this.header.ResumeLayout(false);
             this.header.PerformLayout();
             this.tabControl.ResumeLayout(false);

@@ -2,7 +2,6 @@
 using System.Windows.Forms;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using System.Linq;
 
 namespace TaskManagementApp
 {
@@ -80,7 +79,15 @@ namespace TaskManagementApp
                     txtTitle.Text = selectedTask.GetValue("Title", "").ToString();
                     txtDescription.Text = selectedTask.GetValue("Description", "").ToString();
                     txtStatus.Text = selectedTask.GetValue("TaskStatus", "").ToString();
-                    txtDueDate.Text = "N/A";
+
+                    if (selectedTask.Contains("DueDate") && selectedTask["DueDate"].IsValidDateTime)
+                    {
+                        txtDueDate.Text = selectedTask["DueDate"].ToUniversalTime().ToString("yyyy-MM-dd");
+                    }
+                    else
+                    {
+                        txtDueDate.Text = "N/A";
+                    }
 
                     LoadSteps(selectedTask);
                 }
@@ -146,7 +153,6 @@ namespace TaskManagementApp
                 {
                     var steps = selectedTask["Steps"].AsBsonArray;
                     bool stepFound = false;
-                    bool allCompleted = true;
 
                     for (int i = 0; i < steps.Count; i++)
                     {
@@ -159,6 +165,7 @@ namespace TaskManagementApp
                                 return;
                             }
 
+                            // Update step to Completed
                             step["StepStatus"] = "Completed";
                             step["SignedOff"] = new BsonDocument
                             {
@@ -167,25 +174,17 @@ namespace TaskManagementApp
                                 { "Date", DateTime.Now }
                             };
                             stepFound = true;
-                        }
 
-                        if (step.GetValue("StepStatus", "").ToString() != "Completed")
-                        {
-                            allCompleted = false;
+                            // Change task status to "In Progress" when first step is completed
+                            if (selectedTask.GetValue("TaskStatus", "").ToString() == "Not Started")
+                            {
+                                selectedTask["TaskStatus"] = "In Progress";
+                            }
                         }
                     }
 
                     if (stepFound)
                     {
-                        if (allCompleted)
-                        {
-                            selectedTask["TaskStatus"] = "Completed";
-                        }
-                        else if (selectedTask.GetValue("TaskStatus", "").ToString() == "Pending")
-                        {
-                            selectedTask["TaskStatus"] = "In Progress";
-                        }
-
                         var filter = Builders<BsonDocument>.Filter.Eq("TaskID", selectedTask.GetValue("TaskID", "").ToString());
                         _tasks.ReplaceOne(filter, selectedTask);
 
@@ -229,11 +228,12 @@ namespace TaskManagementApp
 
                 if (!allCompleted)
                 {
-                    MessageBox.Show("All steps must be completed before submitting.");
+                    MessageBox.Show("All steps must be completed before submitting the task.");
                     return;
                 }
 
-                selectedTask["TaskStatus"] = "Completed";
+                // Set task status to "Finished"
+                selectedTask["TaskStatus"] = "Finished";
                 var filter = Builders<BsonDocument>.Filter.Eq("TaskID", selectedTask.GetValue("TaskID", "").ToString());
                 _tasks.ReplaceOne(filter, selectedTask);
 
@@ -269,6 +269,11 @@ namespace TaskManagementApp
         private void btnClose_Click(object sender, EventArgs e)
         {
             this.Close();
+        }
+
+        private void ViewTasksForm_Load(object sender, EventArgs e)
+        {
+            // Empty event handler
         }
 
         private void LogAudit(string userID, string action, string details)

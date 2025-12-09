@@ -11,6 +11,7 @@ namespace TaskManagementApp
         private Label lblTitle;
         private Label lblWelcome;
         private Button btnViewTasks;
+        private Button btnUpdateProfile;
         private Button btnReports;
         private Button btnLogout;
 
@@ -27,6 +28,7 @@ namespace TaskManagementApp
             this.lblTitle = new Label();
             this.lblWelcome = new Label();
             this.btnViewTasks = new Button();
+            this.btnUpdateProfile = new Button();
             this.btnReports = new Button();
             this.btnLogout = new Button();
 
@@ -34,7 +36,7 @@ namespace TaskManagementApp
             this.SuspendLayout();
 
             // FORM
-            this.ClientSize = new Size(700, 500);
+            this.ClientSize = new Size(700, 550);
             this.Text = "User Dashboard";
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -44,7 +46,7 @@ namespace TaskManagementApp
             // MAIN PANEL
             this.mainPanel.BackColor = Color.White;
             this.mainPanel.Location = new Point(50, 50);
-            this.mainPanel.Size = new Size(600, 400);
+            this.mainPanel.Size = new Size(600, 450);
 
             // TITLE
             this.lblTitle.Text = "User Dashboard";
@@ -67,10 +69,22 @@ namespace TaskManagementApp
             this.btnViewTasks.BackColor = Color.FromArgb(60, 130, 200);
             this.btnViewTasks.FlatStyle = FlatStyle.Flat;
             this.btnViewTasks.FlatAppearance.BorderSize = 0;
-            this.btnViewTasks.Location = new Point(150, 140);
+            this.btnViewTasks.Location = new Point(150, 130);
             this.btnViewTasks.Size = new Size(300, 60);
             this.btnViewTasks.Cursor = Cursors.Hand;
             this.btnViewTasks.Click += new EventHandler(this.btnViewTasks_Click);
+
+            // UPDATE PROFILE BUTTON
+            this.btnUpdateProfile.Text = "👤 Update My Profile";
+            this.btnUpdateProfile.Font = new Font("Segoe UI", 14, FontStyle.Bold);
+            this.btnUpdateProfile.ForeColor = Color.White;
+            this.btnUpdateProfile.BackColor = Color.FromArgb(100, 100, 180);
+            this.btnUpdateProfile.FlatStyle = FlatStyle.Flat;
+            this.btnUpdateProfile.FlatAppearance.BorderSize = 0;
+            this.btnUpdateProfile.Location = new Point(150, 210);
+            this.btnUpdateProfile.Size = new Size(300, 60);
+            this.btnUpdateProfile.Cursor = Cursors.Hand;
+            this.btnUpdateProfile.Click += new EventHandler(this.btnUpdateProfile_Click);
 
             // REPORTS BUTTON
             this.btnReports.Text = "📊 My Reports";
@@ -79,7 +93,7 @@ namespace TaskManagementApp
             this.btnReports.BackColor = Color.FromArgb(40, 160, 80);
             this.btnReports.FlatStyle = FlatStyle.Flat;
             this.btnReports.FlatAppearance.BorderSize = 0;
-            this.btnReports.Location = new Point(150, 220);
+            this.btnReports.Location = new Point(150, 290);
             this.btnReports.Size = new Size(300, 60);
             this.btnReports.Cursor = Cursors.Hand;
             this.btnReports.Click += new EventHandler(this.btnReports_Click);
@@ -91,7 +105,7 @@ namespace TaskManagementApp
             this.btnLogout.BackColor = Color.FromArgb(200, 60, 60);
             this.btnLogout.FlatStyle = FlatStyle.Flat;
             this.btnLogout.FlatAppearance.BorderSize = 0;
-            this.btnLogout.Location = new Point(200, 320);
+            this.btnLogout.Location = new Point(200, 380);
             this.btnLogout.Size = new Size(200, 45);
             this.btnLogout.Cursor = Cursors.Hand;
             this.btnLogout.Click += new EventHandler(this.btnLogout_Click);
@@ -99,6 +113,7 @@ namespace TaskManagementApp
             this.mainPanel.Controls.Add(this.lblTitle);
             this.mainPanel.Controls.Add(this.lblWelcome);
             this.mainPanel.Controls.Add(this.btnViewTasks);
+            this.mainPanel.Controls.Add(this.btnUpdateProfile);
             this.mainPanel.Controls.Add(this.btnReports);
             this.mainPanel.Controls.Add(this.btnLogout);
 

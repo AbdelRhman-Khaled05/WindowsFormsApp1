@@ -54,7 +54,29 @@ namespace TaskManagementApp
 
             if (result == DialogResult.Yes)
             {
-                this.Close();
+                this.Hide();
+                LoginForm loginForm = new LoginForm();
+
+                if (loginForm.ShowDialog() == DialogResult.OK)
+                {
+                    // Check role and show appropriate dashboard
+                    if (LoginForm.LoggedInRole == "Admin")
+                    {
+                        AdminDashboard newDashboard = new AdminDashboard();
+                        this.Close();
+                        newDashboard.Show();
+                    }
+                    else if (LoginForm.LoggedInRole == "User")
+                    {
+                        UserDashboard userDashboard = new UserDashboard();
+                        this.Close();
+                        userDashboard.Show();
+                    }
+                }
+                else
+                {
+                    Application.Exit();
+                }
             }
         }
     }

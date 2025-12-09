@@ -17,6 +17,12 @@ namespace TaskManagementApp
             f.ShowDialog();
         }
 
+        private void btnUpdateProfile_Click(object sender, EventArgs e)
+        {
+            UpdateUserProfileForm f = new UpdateUserProfileForm();
+            f.ShowDialog();
+        }
+
         private void btnReports_Click(object sender, EventArgs e)
         {
             ReportForm f = new ReportForm();
@@ -30,7 +36,29 @@ namespace TaskManagementApp
 
             if (result == DialogResult.Yes)
             {
-                this.Close();
+                this.Hide();
+                LoginForm loginForm = new LoginForm();
+
+                if (loginForm.ShowDialog() == DialogResult.OK)
+                {
+                    // Check role and show appropriate dashboard
+                    if (LoginForm.LoggedInRole == "Admin")
+                    {
+                        AdminDashboard adminDashboard = new AdminDashboard();
+                        this.Close();
+                        adminDashboard.Show();
+                    }
+                    else if (LoginForm.LoggedInRole == "User")
+                    {
+                        UserDashboard newDashboard = new UserDashboard();
+                        this.Close();
+                        newDashboard.Show();
+                    }
+                }
+                else
+                {
+                    Application.Exit();
+                }
             }
         }
     }

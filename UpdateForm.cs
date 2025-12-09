@@ -8,7 +8,6 @@ namespace TaskManagementApp
     public partial class UpdateForm : Form
     {
         private IMongoDatabase _db;
-        private IMongoCollection<BsonDocument> _users;
         private IMongoCollection<BsonDocument> _tasks;
         private IMongoCollection<BsonDocument> _auditLogs;
 
@@ -19,33 +18,13 @@ namespace TaskManagementApp
             try
             {
                 _db = MongoConnection.GetDatabase();
-                _users = _db.GetCollection<BsonDocument>("Users");
                 _tasks = _db.GetCollection<BsonDocument>("Tasks");
                 _auditLogs = _db.GetCollection<BsonDocument>("AuditLogs");
-                LoadUsers();
                 LoadTasks();
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error connecting to MongoDB: " + ex.Message);
-            }
-        }
-
-        private void LoadUsers()
-        {
-            try
-            {
-                cmbUsers.Items.Clear();
-                var allUsers = _users.Find(new BsonDocument()).ToList();
-
-                foreach (var user in allUsers)
-                {
-                    cmbUsers.Items.Add(user.GetValue("UserID", "").ToString());
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error loading users: " + ex.Message);
             }
         }
 
@@ -64,29 +43,6 @@ namespace TaskManagementApp
             catch (Exception ex)
             {
                 MessageBox.Show("Error loading tasks: " + ex.Message);
-            }
-        }
-
-        private void cmbUsers_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (cmbUsers.SelectedItem == null) return;
-
-            try
-            {
-                string userID = cmbUsers.SelectedItem.ToString();
-                var filter = Builders<BsonDocument>.Filter.Eq("UserID", userID);
-                var user = _users.Find(filter).FirstOrDefault();
-
-                if (user != null)
-                {
-                    txtUsername.Text = user.GetValue("Username", "").AsString;
-                    txtPassword.Text = user.GetValue("Password", "").AsString;
-                    txtRole.Text = user.GetValue("Role", "").AsString;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error loading user details: " + ex.Message);
             }
         }
 
@@ -109,42 +65,16 @@ namespace TaskManagementApp
 
                     txtTaskTitle.Text = task.GetValue("Title", "").AsString;
                     txtTaskDescription.Text = task.GetValue("Description", "").AsString;
-                    txtTaskStatus.Text = task.GetValue("TaskStatus", "").AsString;
+
+                    if (task.Contains("DueDate") && task["DueDate"].IsValidDateTime)
+                    {
+                        dtpDueDate.Value = task["DueDate"].ToUniversalTime();
+                    }
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error loading task details: " + ex.Message);
-            }
-        }
-
-        private void btnUpdateUser_Click(object sender, EventArgs e)
-        {
-            if (cmbUsers.SelectedItem == null)
-            {
-                MessageBox.Show("Select a user to update.");
-                return;
-            }
-
-            try
-            {
-                string userID = cmbUsers.SelectedItem.ToString();
-                var filter = Builders<BsonDocument>.Filter.Eq("UserID", userID);
-
-                var update = Builders<BsonDocument>.Update
-                    .Set("Username", txtUsername.Text)
-                    .Set("Password", txtPassword.Text)
-                    .Set("Role", txtRole.Text);
-
-                _users.UpdateOne(filter, update);
-
-                LogAudit(LoginForm.LoggedInUserID, "Update User", $"Updated user: {userID}");
-
-                MessageBox.Show("User updated successfully!");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error updating user: " + ex.Message);
             }
         }
 
@@ -172,7 +102,7 @@ namespace TaskManagementApp
                     .Set("UserID", userIdObj)
                     .Set("Title", txtTaskTitle.Text)
                     .Set("Description", txtTaskDescription.Text)
-                    .Set("TaskStatus", txtTaskStatus.Text);
+                    .Set("DueDate", dtpDueDate.Value);
 
                 _tasks.UpdateOne(filter, update);
 
@@ -188,9 +118,13 @@ namespace TaskManagementApp
 
         private void btnRefresh_Click(object sender, EventArgs e)
         {
-            LoadUsers();
             LoadTasks();
             MessageBox.Show("Data refreshed.");
+        }
+
+        private void header_Paint(object sender, PaintEventArgs e)
+        {
+            // Empty event handler
         }
 
         private void LogAudit(string userID, string action, string details)
