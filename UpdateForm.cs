@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Forms;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -25,7 +27,7 @@ namespace TaskManagementApp
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error connecting to MongoDB: " + ex.Message);
+                MessageBox.Show("Mongo connection failed: " + ex.Message);
             }
         }
 
@@ -35,7 +37,8 @@ namespace TaskManagementApp
             LoadTasks();
         }
 
-        // ======================== USER TAB ========================
+        // ============================= USER MANAGEMENT =============================
+
         private void LoadUsers()
         {
             try
@@ -44,13 +47,11 @@ namespace TaskManagementApp
                 var allUsers = _users.Find(new BsonDocument()).ToList();
 
                 foreach (var user in allUsers)
-                {
-                    cmbUsers.Items.Add(user.GetValue("_id").ToString());
-                }
+                    cmbUsers.Items.Add(user["_id"].ToString());
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error loading users: " + ex.Message);
+                MessageBox.Show("LoadUsers error: " + ex.Message);
             }
         }
 
@@ -60,21 +61,19 @@ namespace TaskManagementApp
 
             try
             {
-                string userIdStr = cmbUsers.SelectedItem.ToString();
-                ObjectId userId = ObjectId.Parse(userIdStr);
-                var filter = Builders<BsonDocument>.Filter.Eq("_id", userId);
-                var user = _users.Find(filter).FirstOrDefault();
+                var id = ObjectId.Parse(cmbUsers.SelectedItem.ToString());
+                var user = _users.Find(Builders<BsonDocument>.Filter.Eq("_id", id)).FirstOrDefault();
 
                 if (user != null)
                 {
-                    txtUsername.Text = user.GetValue("Username", "").AsString;
-                    txtPassword.Text = user.GetValue("Password", "").AsString;
-                    txtRole.Text = user.GetValue("Role", "").AsString;
+                    txtUsername.Text = user.GetValue("Username", "").ToString();
+                    txtPassword.Text = user.GetValue("Password", "").ToString();
+                    txtRole.Text = user.GetValue("Role", "").ToString();
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error loading user details: " + ex.Message);
+                MessageBox.Show("User load error: " + ex.Message);
             }
         }
 
@@ -82,57 +81,48 @@ namespace TaskManagementApp
         {
             if (cmbUsers.SelectedItem == null)
             {
-                MessageBox.Show("Select a user to update.");
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(txtUsername.Text) ||
-                string.IsNullOrWhiteSpace(txtPassword.Text) ||
-                string.IsNullOrWhiteSpace(txtRole.Text))
-            {
-                MessageBox.Show("Please fill in all fields.");
+                MessageBox.Show("Pick a user first.");
                 return;
             }
 
             try
             {
-                string userIdStr = cmbUsers.SelectedItem.ToString();
-                ObjectId userId = ObjectId.Parse(userIdStr);
-                var filter = Builders<BsonDocument>.Filter.Eq("_id", userId);
+                var id = ObjectId.Parse(cmbUsers.SelectedItem.ToString());
 
                 var update = Builders<BsonDocument>.Update
                     .Set("Username", txtUsername.Text)
                     .Set("Password", txtPassword.Text)
                     .Set("Role", txtRole.Text);
 
-                _users.UpdateOne(filter, update);
+                _users.UpdateOne(Builders<BsonDocument>.Filter.Eq("_id", id), update);
 
-                LogAudit(LoginForm.LoggedInUserID, "Update User", $"Updated user: {txtUsername.Text}");
-
-                MessageBox.Show("User updated successfully!");
+                LogAudit(LoginForm.LoggedInUserID, "UpdateUser", $"Updated user {id}");
+                MessageBox.Show("User updated!");
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error updating user: " + ex.Message);
+                MessageBox.Show("Update user error: " + ex.Message);
             }
         }
 
-        // ======================== TASK TAB ========================
+        // ============================= TASK MANAGEMENT =============================
+
         private void LoadTasks()
         {
             try
             {
                 cmbTasks.Items.Clear();
-                var allTasks = _tasks.Find(new BsonDocument()).ToList();
+                var tasks = _tasks.Find(new BsonDocument()).ToList();
 
-                foreach (var task in allTasks)
+                foreach (var task in tasks)
                 {
-                    cmbTasks.Items.Add(task.GetValue("TaskID", "").ToString());
+                    var tid = task.Contains("TaskID") ? task["TaskID"].ToString() : task["_id"].ToString();
+                    cmbTasks.Items.Add(tid);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error loading tasks: " + ex.Message);
+                MessageBox.Show("LoadTasks error: " + ex.Message);
             }
         }
 
@@ -142,33 +132,64 @@ namespace TaskManagementApp
 
             try
             {
-                string taskID = cmbTasks.SelectedItem.ToString();
-                var filter = Builders<BsonDocument>.Filter.Eq("TaskID", taskID);
-                var task = _tasks.Find(filter).FirstOrDefault();
+                string taskId = cmbTasks.SelectedItem.ToString();
 
-                if (task != null)
+                BsonDocument task =
+                    _tasks.Find(Builders<BsonDocument>.Filter.Eq("TaskID", taskId)).FirstOrDefault()
+                    ?? (ObjectId.TryParse(taskId, out ObjectId oid)
+                        ? _tasks.Find(Builders<BsonDocument>.Filter.Eq("_id", oid)).FirstOrDefault()
+                        : null);
+
+                if (task == null)
                 {
-                    if (task.Contains("UserID") && task["UserID"].IsObjectId)
-                        txtTaskUserID.Text = task["UserID"].AsObjectId.ToString();
-                    else
-                        txtTaskUserID.Text = task.GetValue("UserID", "").ToString();
-
-                    txtTaskTitle.Text = task.GetValue("Title", "").AsString;
-                    txtTaskDescription.Text = task.GetValue("Description", "").AsString;
-
-                    if (task.Contains("DueDate") && task["DueDate"].IsValidDateTime)
-                    {
-                        dtpDueDate.Value = task["DueDate"].ToUniversalTime();
-                    }
-                    else
-                    {
-                        dtpDueDate.Value = DateTime.Now;
-                    }
+                    dgvSteps.Rows.Clear();
+                    ClearStepEditor();
+                    return;
                 }
+
+                txtTaskUserID.Text = task.GetValue("UserID", "").ToString();
+                txtTaskTitle.Text = task.GetValue("Title", "").ToString();
+                txtTaskDescription.Text = task.GetValue("Description", "").ToString();
+
+                if (task.Contains("DueDate") && task["DueDate"].IsValidDateTime)
+                    dtpDueDate.Value = task["DueDate"].ToUniversalTime();
+                else
+                    dtpDueDate.Value = DateTime.Now;
+
+                LoadStepsForTask(task);
+                ClearStepEditor();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error loading task details: " + ex.Message);
+                MessageBox.Show("Task load error: " + ex.Message);
+            }
+        }
+
+        private void LoadStepsForTask(BsonDocument task)
+        {
+            dgvSteps.Rows.Clear();
+
+            if (!task.Contains("Steps") || !task["Steps"].IsBsonArray)
+                return;
+
+            foreach (var s in task["Steps"].AsBsonArray)
+            {
+                var step = s.AsBsonDocument;
+
+                string id = step.GetValue("StepID", step.GetValue("Id", "")).ToString();
+                string desc = step.GetValue("StepDescription", step.GetValue("Description", "")).ToString();
+                string status = step.GetValue("StepStatus", step.GetValue("Status", "")).ToString();
+
+                string signed = "Not-Signed";
+                if (step.Contains("SignedOff"))
+                {
+                    signed = step["SignedOff"]
+                        .AsBsonDocument
+                        .GetValue("Status", new BsonString("Not-Signed"))
+                        .ToString();
+                }
+
+                dgvSteps.Rows.Add(id, desc, status, signed);
             }
         }
 
@@ -176,79 +197,170 @@ namespace TaskManagementApp
         {
             if (cmbTasks.SelectedItem == null)
             {
-                MessageBox.Show("Select a task to update.");
+                MessageBox.Show("Pick a task.");
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(txtTaskUserID.Text) ||
-                string.IsNullOrWhiteSpace(txtTaskTitle.Text))
+            try
             {
-                MessageBox.Show("Please fill in required fields.");
+                string tid = cmbTasks.SelectedItem.ToString();
+
+                if (!ObjectId.TryParse(txtTaskUserID.Text, out ObjectId userId))
+                {
+                    MessageBox.Show("Invalid UserID.");
+                    return;
+                }
+
+                var update = Builders<BsonDocument>.Update
+                    .Set("UserID", userId)
+                    .Set("Title", txtTaskTitle.Text)
+                    .Set("Description", txtTaskDescription.Text)
+                    .Set("DueDate", dtpDueDate.Value);
+
+                _tasks.UpdateOne(
+                    Builders<BsonDocument>.Filter.Eq("TaskID", tid),
+                    update
+                );
+
+                MessageBox.Show("Task updated!");
+                LogAudit(LoginForm.LoggedInUserID, "UpdateTask", $"Updated task {tid}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Update task error: " + ex.Message);
+            }
+        }
+
+        // ============================= STEP EDITOR =============================
+
+        private void dgvSteps_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+
+            var row = dgvSteps.Rows[e.RowIndex];
+
+            txtStepID.Text = row.Cells["StepID"].Value?.ToString() ?? "";
+            txtStepDescription.Text = row.Cells["Description"].Value?.ToString() ?? "";
+
+            cmbStepStatus.SelectedItem = row.Cells["Status"].Value?.ToString();
+            cmbSignedOff.SelectedItem = row.Cells["SignedOffStatus"].Value?.ToString();
+        }
+
+        private void dgvSteps_CellBeginEdit(object sender, DataGridViewCellCancelEventArgs e)
+        {
+            // Admin can freely edit (no sequential lock)
+        }
+
+        private void btnUpdateStep_Click(object sender, EventArgs e)
+        {
+            if (cmbTasks.SelectedItem == null)
+            {
+                MessageBox.Show("Select a task first.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(txtStepID.Text))
+            {
+                MessageBox.Show("StepID cannot be empty.");
                 return;
             }
 
             try
             {
                 string taskID = cmbTasks.SelectedItem.ToString();
-                var filter = Builders<BsonDocument>.Filter.Eq("TaskID", taskID);
+                string stepID = txtStepID.Text.Trim();
 
-                ObjectId userIdObj;
-                if (!ObjectId.TryParse(txtTaskUserID.Text, out userIdObj))
+                // Load full task
+                var task = _tasks.Find(Builders<BsonDocument>.Filter.Eq("TaskID", taskID)).FirstOrDefault();
+                if (task == null)
                 {
-                    MessageBox.Show("Invalid UserID! Enter a valid ObjectId.");
+                    MessageBox.Show("Task not found.");
                     return;
                 }
 
-                var update = Builders<BsonDocument>.Update
-                    .Set("UserID", userIdObj)
-                    .Set("Title", txtTaskTitle.Text)
-                    .Set("Description", txtTaskDescription.Text)
-                    .Set("DueDate", dtpDueDate.Value);
+                var steps = task["Steps"].AsBsonArray;
 
-                _tasks.UpdateOne(filter, update);
+                // Find step index
+                int index = steps
+                    .Select((s, i) => new { s, i })
+                    .FirstOrDefault(x => x.s.AsBsonDocument["StepID"].ToString() == stepID)?.i ?? -1;
 
-                LogAudit(LoginForm.LoggedInUserID, "Update Task", $"Updated task: {taskID}");
+                if (index < 0)
+                {
+                    MessageBox.Show("Step not found.");
+                    return;
+                }
 
-                MessageBox.Show("Task updated successfully!");
+                // Build updated step
+                var updatedStep = new BsonDocument
+                {
+                    { "StepID", stepID },
+                    { "StepDescription", txtStepDescription.Text },
+                    { "Description", txtStepDescription.Text },
+                    { "StepStatus", cmbStepStatus.SelectedItem?.ToString() ?? "Pending" },
+                    { "Status", cmbStepStatus.SelectedItem?.ToString() ?? "Pending" },
+                    { "SignedOff", new BsonDocument
+                        {
+                            { "Status", cmbSignedOff.SelectedItem?.ToString() ?? "Not-Signed" },
+                            { "Date", DateTime.UtcNow }
+                        }
+                    }
+                };
+
+                // Replace in array
+                steps[index] = updatedStep;
+
+                // Save full task back
+                _tasks.ReplaceOne(
+                    Builders<BsonDocument>.Filter.Eq("TaskID", taskID),
+                    task
+                );
+
+                MessageBox.Show("Step updated successfully!");
+
+                LogAudit(LoginForm.LoggedInUserID, "Admin Update Step",
+                    $"Updated Step {stepID} in Task {taskID}");
+
+                LoadStepsForTask(task);
+                ClearStepEditor();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error updating task: " + ex.Message);
+                MessageBox.Show("Error updating step: " + ex.Message);
             }
         }
 
-        // ======================== REFRESH BUTTON ========================
+        private void ClearStepEditor()
+        {
+            txtStepID.Text = "";
+            txtStepDescription.Text = "";
+            cmbStepStatus.SelectedIndex = -1;
+            cmbSignedOff.SelectedIndex = -1;
+        }
+
+        // ============================= LOGGING =============================
+
+        private void LogAudit(string uid, string action, string details)
+        {
+            try
+            {
+                _auditLogs.InsertOne(new BsonDocument
+                {
+                    { "LogID", Guid.NewGuid().ToString() },
+                    { "UserID", uid },
+                    { "Action", action },
+                    { "Details", details },
+                    { "Timestamp", DateTime.Now }
+                });
+            }
+            catch { }
+        }
+
         private void btnRefresh_Click(object sender, EventArgs e)
         {
             LoadUsers();
             LoadTasks();
-            MessageBox.Show("Data refreshed.");
-        }
-
-        private void header_Paint(object sender, PaintEventArgs e)
-        {
-            // Empty event handler
-        }
-
-        private void LogAudit(string userID, string action, string details)
-        {
-            try
-            {
-                var log = new BsonDocument
-                {
-                    { "LogID", Guid.NewGuid().ToString() },
-                    { "UserID", userID },
-                    { "Action", action },
-                    { "Details", details },
-                    { "Timestamp", DateTime.Now }
-                };
-
-                _auditLogs.InsertOne(log);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Audit log error: " + ex.Message);
-            }
+            MessageBox.Show("Refreshed.");
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Windows.Forms;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -10,6 +11,8 @@ namespace TaskManagementApp
         private IMongoDatabase _db;
         private IMongoCollection<BsonDocument> _tasks;
         private IMongoCollection<BsonDocument> _auditLogs;
+
+        private List<BsonDocument> stepList = new List<BsonDocument>();
 
         public InsertForm()
         {
@@ -27,44 +30,71 @@ namespace TaskManagementApp
             }
         }
 
+        private void btnAddStep_Click(object sender, EventArgs e)
+        {
+            using (var form = new AddStepForm())
+            {
+                if (form.ShowDialog(this) == DialogResult.OK)
+                {
+                    var stepDoc = new BsonDocument
+                    {
+                        { "StepID", form.StepID },
+                        { "StepDescription", form.StepDescription },
+                        { "StepStatus", "Pending" } // matches schema
+                    };
+
+                    stepList.Add(stepDoc);
+
+                    // Add to ListView (two columns: StepID, Description)
+                    var item = new ListViewItem(form.StepID);
+                    item.SubItems.Add(form.StepDescription);
+                    lvSteps.Items.Add(item);
+                }
+            }
+        }
+
         private void btnInsertTask_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtTaskID.Text) ||
                 string.IsNullOrWhiteSpace(txtTaskUserID.Text) ||
                 string.IsNullOrWhiteSpace(txtTaskTitle.Text))
             {
-                MessageBox.Show("Please fill in all required fields (TaskID, UserID, Title).");
+                MessageBox.Show("TaskID, UserID, and Title are required.");
+                return;
+            }
+
+            if (!ObjectId.TryParse(txtTaskUserID.Text, out ObjectId userIdObj))
+            {
+                MessageBox.Show("Invalid UserID.");
                 return;
             }
 
             try
             {
-                ObjectId userIdObj;
-                if (!ObjectId.TryParse(txtTaskUserID.Text, out userIdObj))
+                var taskDoc = new BsonDocument
                 {
-                    MessageBox.Show("Invalid UserID! Enter a valid ObjectId.");
-                    return;
-                }
-
-                // Create task document with NO Status field - defaults to "Not Started"
-                var task = new BsonDocument
-                {
-                    { "TaskID", txtTaskID.Text },
+                    { "TaskID", txtTaskID.Text.Trim() },
                     { "UserID", userIdObj },
-                    { "Title", txtTaskTitle.Text },
-                    { "Description", txtTaskDescription.Text },
-                    { "Status", "Not Started" },  // DEFAULT STATUS
-                    { "DueDate", dtpDueDate.Value },
+                    { "Title", txtTaskTitle.Text.Trim() },
+                    { "Description", txtTaskDescription.Text.Trim() },
+                    { "TaskStatus", "Pending" }, // must match schema
+                    { "Steps", new BsonArray(stepList) },
                     { "CreatedDate", DateTime.Now },
-                    { "Steps", new BsonArray() }  // Empty steps array
+                    { "DueDate", dtpDueDate.Value }
                 };
 
-                _tasks.InsertOne(task);
+                _tasks.InsertOne(taskDoc);
 
-                LogAudit(LoginForm.LoggedInUsername, "Insert Task", $"Created task: {txtTaskID.Text}");
+                LogAudit(LoginForm.LoggedInUsername, "Insert Task", $"Created task {txtTaskID.Text}");
 
-                MessageBox.Show("Task inserted successfully!");
+                MessageBox.Show("Task Inserted.");
+                stepList.Clear();
+                lvSteps.Items.Clear();
                 ClearFields();
+            }
+            catch (MongoWriteException mwx)
+            {
+                MessageBox.Show("MongoDB write error: " + mwx.Message);
             }
             catch (Exception ex)
             {
@@ -88,7 +118,7 @@ namespace TaskManagementApp
                 var log = new BsonDocument
                 {
                     { "LogID", Guid.NewGuid().ToString() },
-                    { "Username", username },  // Changed from UserID to Username
+                    { "Username", username ?? "" },
                     { "Action", action },
                     { "Details", details },
                     { "Timestamp", DateTime.Now }
@@ -100,6 +130,11 @@ namespace TaskManagementApp
             {
                 Console.WriteLine("Audit log error: " + ex.Message);
             }
+        }
+
+        private void InsertForm_Load(object sender, EventArgs e)
+        {
+            // no-op
         }
     }
 }

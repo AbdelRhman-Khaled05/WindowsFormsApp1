@@ -62,7 +62,7 @@ namespace TaskManagementApp
                 string taskID = selectedItem.Split('-')[0].Trim();
                 LoadTaskDetails(taskID);
 
-                LogAudit(LoginForm.LoggedInUserID, "View Task", $"Viewed task: {taskID}");
+                LogAudit(LoginForm.LoggedInUsername, "View Task", $"Viewed task: {taskID}");
             }
         }
 
@@ -108,7 +108,7 @@ namespace TaskManagementApp
                 foreach (var step in steps)
                 {
                     var stepDoc = step.AsBsonDocument;
-                    string stepID = stepDoc.GetValue("StepID", "").ToString();
+                    string stepID = stepDoc.Contains("StepID") ? stepDoc.GetValue("StepID", "").ToString() : "";
                     string desc = stepDoc.GetValue("StepDescription", "").ToString();
                     string status = stepDoc.GetValue("StepStatus", "").ToString();
 
@@ -149,52 +149,98 @@ namespace TaskManagementApp
 
             try
             {
-                if (selectedTask.Contains("Steps") && selectedTask["Steps"].IsBsonArray)
+                var steps = selectedTask["Steps"].AsBsonArray;
+
+                // ---------------------------
+                // FIND CURRENT STEP INDEX
+                // ---------------------------
+                int currentIndex = -1;
+                for (int i = 0; i < steps.Count; i++)
                 {
-                    var steps = selectedTask["Steps"].AsBsonArray;
-                    bool stepFound = false;
-
-                    for (int i = 0; i < steps.Count; i++)
+                    var step = steps[i].AsBsonDocument;
+                    if (step["StepID"].AsString == stepID)
                     {
-                        var step = steps[i].AsBsonDocument;
-                        if (step.GetValue("StepID", "").ToString() == stepID)
-                        {
-                            if (step.GetValue("StepStatus", "").ToString() == "Completed")
-                            {
-                                MessageBox.Show("This step is already completed.");
-                                return;
-                            }
-
-                            // Update step to Completed
-                            step["StepStatus"] = "Completed";
-                            step["SignedOff"] = new BsonDocument
-                            {
-                                { "UserID", LoginForm.LoggedInUserID },
-                                { "Status", "Approved" },
-                                { "Date", DateTime.Now }
-                            };
-                            stepFound = true;
-
-                            // Change task status to "In Progress" when first step is completed
-                            if (selectedTask.GetValue("TaskStatus", "").ToString() == "Not Started")
-                            {
-                                selectedTask["TaskStatus"] = "In Progress";
-                            }
-                        }
-                    }
-
-                    if (stepFound)
-                    {
-                        var filter = Builders<BsonDocument>.Filter.Eq("TaskID", selectedTask.GetValue("TaskID", "").ToString());
-                        _tasks.ReplaceOne(filter, selectedTask);
-
-                        LogAudit(LoginForm.LoggedInUserID, "Complete Step", $"Completed step {stepID} in task {txtTaskID.Text}");
-
-                        MessageBox.Show("Step completed successfully!");
-                        LoadTaskDetails(selectedTask.GetValue("TaskID", "").ToString());
-                        LoadUserTasks();
+                        currentIndex = i;
+                        break;
                     }
                 }
+
+                if (currentIndex == -1)
+                {
+                    MessageBox.Show("Step not found.");
+                    return;
+                }
+
+                // ---------------------------
+                // 🔥 SEQUENTIAL LOCK RULE
+                // DO NOT ALLOW COMPLETION OF STEP N IF N-1 IS NOT SIGNED
+                // ---------------------------
+                if (currentIndex > 0)
+                {
+                    var previousStep = steps[currentIndex - 1].AsBsonDocument;
+
+                    string prevSigned = "Not-Signed";
+                    if (previousStep.Contains("SignedOff"))
+                    {
+                        prevSigned = previousStep["SignedOff"]
+                            .AsBsonDocument
+                            .GetValue("Status", "Not-Signed")
+                            .AsString;
+                    }
+
+                    if (prevSigned != "Signed")
+                    {
+                        MessageBox.Show(
+                            $"You cannot complete step {currentIndex + 1} before signing step {currentIndex}.",
+                            "Step Locked",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Warning
+                        );
+                        return;
+                    }
+                }
+
+                // ---------------------------
+                // UPDATE CURRENT STEP → COMPLETED + SIGNED
+                // ---------------------------
+                var currentStep = steps[currentIndex].AsBsonDocument;
+
+                if (currentStep["StepStatus"] == "Completed")
+                {
+                    MessageBox.Show("This step is already completed.");
+                    return;
+                }
+
+                currentStep["StepStatus"] = "Completed";
+                currentStep["SignedOff"] = new BsonDocument
+        {
+            { "Status", "Signed" },
+            { "Date", DateTime.Now }
+        };
+
+                // Replace in array
+                steps[currentIndex] = currentStep;
+
+                // ---------------------------
+                // UPDATE TASK STATUS
+                // ---------------------------
+                if (selectedTask["TaskStatus"].AsString == "Pending")
+                    selectedTask["TaskStatus"] = "In Progress";
+
+                // ---------------------------
+                // SAVE TO DATABASE
+                // ---------------------------
+                var filter = Builders<BsonDocument>.Filter
+                    .Eq("TaskID", selectedTask["TaskID"].AsString);
+
+                _tasks.ReplaceOne(filter, selectedTask);
+
+                LogAudit(LoginForm.LoggedInUsername, "Complete Step",
+                    $"Completed step {stepID} in task {txtTaskID.Text}");
+
+                MessageBox.Show("Step completed successfully!");
+                LoadTaskDetails(selectedTask["TaskID"].AsString);
+                LoadUserTasks();
             }
             catch (Exception ex)
             {
@@ -232,12 +278,12 @@ namespace TaskManagementApp
                     return;
                 }
 
-                // Set task status to "Finished"
-                selectedTask["TaskStatus"] = "Finished";
+                // Set task status to "Completed"
+                selectedTask["TaskStatus"] = "Completed";
                 var filter = Builders<BsonDocument>.Filter.Eq("TaskID", selectedTask.GetValue("TaskID", "").ToString());
                 _tasks.ReplaceOne(filter, selectedTask);
 
-                LogAudit(LoginForm.LoggedInUserID, "Submit Task", $"Submitted task: {txtTaskID.Text}");
+                LogAudit(LoginForm.LoggedInUsername, "Submit Task", $"Submitted task: {txtTaskID.Text}");
 
                 MessageBox.Show("Task submitted successfully!");
                 LoadUserTasks();
@@ -271,9 +317,15 @@ namespace TaskManagementApp
             this.Close();
         }
 
+        // Designer had referenced txtDescription_TextChanged — provide an empty handler so Designer stops complaining
+        private void txtDescription_TextChanged(object sender, EventArgs e)
+        {
+            // no-op (designer reference)
+        }
+
         private void ViewTasksForm_Load(object sender, EventArgs e)
         {
-            // Empty event handler
+            // no-op
         }
 
         private void LogAudit(string userID, string action, string details)
@@ -283,7 +335,7 @@ namespace TaskManagementApp
                 var log = new BsonDocument
                 {
                     { "LogID", Guid.NewGuid().ToString() },
-                    { "UserID", userID },
+                    { "Username", userID },
                     { "Action", action },
                     { "Details", details },
                     { "Timestamp", DateTime.Now }

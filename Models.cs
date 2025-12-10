@@ -5,9 +5,7 @@ using System.Collections.Generic;
 
 namespace TaskManagementApp.Models
 {
-    // ===========================
-    // USER COLLECTION
-    // ===========================
+    // USER
     public class User
     {
         [BsonId]
@@ -24,24 +22,33 @@ namespace TaskManagementApp.Models
         public string Role { get; set; }
     }
 
-    // ===========================
-    // STEP (EMBEDDED IN TASK)
-    // ===========================
+    // SignedOff subdocument used inside Step
+    public class SignedOff
+    {
+        [BsonElement("Status")]
+        public string Status { get; set; } = "Not-Signed"; // "Signed" or "Not-Signed"
+
+        [BsonElement("Date")]
+        public DateTime Date { get; set; } = DateTime.UtcNow;
+    }
+
+    // Step inside Steps array (matches MongoDB schema)
     public class Step
     {
         [BsonElement("StepID")]
         public string StepID { get; set; }
 
-        [BsonElement("Description")]
-        public string Description { get; set; }
+        [BsonElement("StepDescription")]
+        public string StepDescription { get; set; }
 
-        [BsonElement("Status")]
-        public string Status { get; set; }  // "Pending" or "Completed"
+        [BsonElement("StepStatus")]
+        public string StepStatus { get; set; } = "Pending"; // "Pending" or "Completed"
+
+        [BsonElement("SignedOff")]
+        public SignedOff SignedOff { get; set; } = new SignedOff();
     }
 
-    // ===========================
-    // TASK COLLECTION
-    // ===========================
+    // Task document
     public class TaskItem
     {
         [BsonId]
@@ -61,44 +68,20 @@ namespace TaskManagementApp.Models
         [BsonElement("Description")]
         public string Description { get; set; }
 
-        [BsonElement("Status")]
-        public string Status { get; set; }  // "Not Started", "In Progress", "Finished"
+        [BsonElement("TaskStatus")]
+        public string TaskStatus { get; set; } = "Pending"; // "Pending", "In-Progress", "Completed"
 
         [BsonElement("Steps")]
         public List<Step> Steps { get; set; } = new List<Step>();
 
         [BsonElement("CreatedDate")]
-        public DateTime CreatedDate { get; set; }
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
         [BsonElement("DueDate")]
         public DateTime? DueDate { get; set; }
     }
 
-    // ===========================
-    // REPORT COLLECTION
-    // ===========================
-    public class Report
-    {
-        [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; }
-
-        [BsonElement("ReportID")]
-        public string ReportID { get; set; }
-
-        [BsonElement("TaskID")]
-        public string TaskID { get; set; }
-
-        [BsonElement("ProgressData")]
-        public string ProgressData { get; set; }
-
-        [BsonElement("GeneratedDate")]
-        public DateTime GeneratedDate { get; set; }
-    }
-
-    // ===========================
-    // AUDIT LOG COLLECTION
-    // ===========================
+    // Audit log
     public class AuditLog
     {
         [BsonId]
@@ -109,7 +92,7 @@ namespace TaskManagementApp.Models
         public string LogID { get; set; }
 
         [BsonElement("Username")]
-        public string Username { get; set; }  // Changed from UserID to Username
+        public string Username { get; set; }
 
         [BsonElement("Action")]
         public string Action { get; set; }
@@ -118,6 +101,6 @@ namespace TaskManagementApp.Models
         public string Details { get; set; }
 
         [BsonElement("Timestamp")]
-        public DateTime Timestamp { get; set; }
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     }
 }

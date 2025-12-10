@@ -87,7 +87,7 @@ namespace TaskManagementApp
             this.lblTitle.ForeColor = System.Drawing.Color.White;
             this.lblTitle.Location = new System.Drawing.Point(20, 20);
             this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(371, 41);
+            this.lblTitle.Size = new System.Drawing.Size(365, 41);
             this.lblTitle.TabIndex = 0;
             this.lblTitle.Text = "📋 View & Complete Tasks";
             // 
