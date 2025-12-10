@@ -56,7 +56,12 @@ namespace TaskManagementApp
                     LoggedInObjectId = user["_id"];
                     LoggedInUserID = user["_id"].ToString();
                     LoggedInUsername = user.GetValue("Username", "").AsString;
-                    LoggedInRole = user.GetValue("Role", "").AsString;
+
+                    // SAFE ROLE HANDLING (new)
+                    if (user.Contains("Role"))
+                        LoggedInRole = user["Role"].AsString;
+                    else
+                        LoggedInRole = "User";  // Default fallback
 
                     this.DialogResult = DialogResult.OK;
                     this.Hide();
@@ -82,6 +87,11 @@ namespace TaskManagementApp
         {
             SignUpForm signUpForm = new SignUpForm();
             signUpForm.ShowDialog();
+        }
+
+        private void mainPanel_Paint(object sender, PaintEventArgs e)
+        {
+
         }
     }
 }

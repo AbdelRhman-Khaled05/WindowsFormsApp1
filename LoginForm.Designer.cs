@@ -55,6 +55,7 @@ namespace TaskManagementApp
             this.mainPanel.Name = "mainPanel";
             this.mainPanel.Size = new System.Drawing.Size(400, 400);
             this.mainPanel.TabIndex = 0;
+            this.mainPanel.Paint += new System.Windows.Forms.PaintEventHandler(this.mainPanel_Paint);
             // 
             // lblTitle
             // 

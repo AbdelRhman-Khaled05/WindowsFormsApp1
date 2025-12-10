@@ -270,7 +270,6 @@ namespace TaskManagementApp
                 string taskID = cmbTasks.SelectedItem.ToString();
                 string stepID = txtStepID.Text.Trim();
 
-                // Load full task
                 var task = _tasks.Find(Builders<BsonDocument>.Filter.Eq("TaskID", taskID)).FirstOrDefault();
                 if (task == null)
                 {
@@ -280,7 +279,6 @@ namespace TaskManagementApp
 
                 var steps = task["Steps"].AsBsonArray;
 
-                // Find step index
                 int index = steps
                     .Select((s, i) => new { s, i })
                     .FirstOrDefault(x => x.s.AsBsonDocument["StepID"].ToString() == stepID)?.i ?? -1;
@@ -291,7 +289,6 @@ namespace TaskManagementApp
                     return;
                 }
 
-                // Build updated step
                 var updatedStep = new BsonDocument
                 {
                     { "StepID", stepID },
@@ -307,10 +304,34 @@ namespace TaskManagementApp
                     }
                 };
 
-                // Replace in array
                 steps[index] = updatedStep;
 
-                // Save full task back
+                // ==============================
+                // ⭐ FIX: UPDATE TASK STATUS
+                // ==============================
+                bool allCompleted = true;
+                bool anyCompleted = false;
+
+                foreach (var s in steps)
+                {
+                    var sd = s.AsBsonDocument;
+                    string st = sd.GetValue("StepStatus", "Pending").ToString();
+
+                    if (st == "Pending")
+                        allCompleted = false;
+
+                    if (st == "Completed")
+                        anyCompleted = true;
+                }
+
+                if (allCompleted)
+                    task["TaskStatus"] = "Completed";
+                else if (anyCompleted)
+                    task["TaskStatus"] = "In Progress";
+                else
+                    task["TaskStatus"] = "Pending";
+
+                // Save the task
                 _tasks.ReplaceOne(
                     Builders<BsonDocument>.Filter.Eq("TaskID", taskID),
                     task

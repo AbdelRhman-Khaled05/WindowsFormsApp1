@@ -108,15 +108,25 @@ namespace TaskManagementApp
                 foreach (var step in steps)
                 {
                     var stepDoc = step.AsBsonDocument;
+
                     string stepID = stepDoc.Contains("StepID") ? stepDoc.GetValue("StepID", "").ToString() : "";
                     string desc = stepDoc.GetValue("StepDescription", "").ToString();
-                    string status = stepDoc.GetValue("StepStatus", "").ToString();
 
-                    string signOffStatus = "Not Signed";
+                    // 🔥 FIX: Correct status handling (StepStatus → Status fallback)
+                    string status = "";
+                    if (stepDoc.Contains("StepStatus") && !string.IsNullOrWhiteSpace(stepDoc["StepStatus"].ToString()))
+                        status = stepDoc["StepStatus"].ToString();
+                    else if (stepDoc.Contains("Status"))
+                        status = stepDoc["Status"].ToString();
+                    else
+                        status = "Pending";
+
+                    // SignedOff status
+                    string signOffStatus = "Not-Signed";
                     if (stepDoc.Contains("SignedOff") && stepDoc["SignedOff"].IsBsonDocument)
                     {
                         var signOff = stepDoc["SignedOff"].AsBsonDocument;
-                        signOffStatus = signOff.GetValue("Status", "Not Signed").ToString();
+                        signOffStatus = signOff.GetValue("Status", "Not-Signed").ToString();
                     }
 
                     lstSteps.Items.Add($"{stepID} - {desc} [{status}] - {signOffStatus}");
@@ -127,6 +137,7 @@ namespace TaskManagementApp
                 lstSteps.Items.Add("No steps available");
             }
         }
+
 
         private void btnCompleteStep_Click(object sender, EventArgs e)
         {
