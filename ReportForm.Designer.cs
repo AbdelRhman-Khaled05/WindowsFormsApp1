@@ -9,8 +9,6 @@ namespace TaskManagementApp
         private Panel header;
         private Label lblTitle;
         private Panel mainPanel;
-        private Label lblUser;
-        private ComboBox cmbUser;
         private Button btnGenerate;
         private Label lblReportTitle;
         private TextBox txtReport;
@@ -30,8 +28,6 @@ namespace TaskManagementApp
             this.header = new System.Windows.Forms.Panel();
             this.lblTitle = new System.Windows.Forms.Label();
             this.mainPanel = new System.Windows.Forms.Panel();
-            this.lblUser = new System.Windows.Forms.Label();
-            this.cmbUser = new System.Windows.Forms.ComboBox();
             this.btnGenerate = new System.Windows.Forms.Button();
             this.lblReportTitle = new System.Windows.Forms.Label();
             this.txtReport = new System.Windows.Forms.TextBox();
@@ -40,6 +36,7 @@ namespace TaskManagementApp
             this.header.SuspendLayout();
             this.mainPanel.SuspendLayout();
             this.SuspendLayout();
+
             // 
             // header
             // 
@@ -50,6 +47,7 @@ namespace TaskManagementApp
             this.header.Name = "header";
             this.header.Size = new System.Drawing.Size(900, 70);
             this.header.TabIndex = 0;
+
             // 
             // lblTitle
             // 
@@ -58,15 +56,14 @@ namespace TaskManagementApp
             this.lblTitle.ForeColor = System.Drawing.Color.White;
             this.lblTitle.Location = new System.Drawing.Point(20, 20);
             this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(376, 41);
+            this.lblTitle.Size = new System.Drawing.Size(500, 41);
             this.lblTitle.TabIndex = 0;
-            this.lblTitle.Text = "📊 Task Progress Reports";
+            this.lblTitle.Text = "📊 Aggregation Pipeline Reports";
+
             // 
             // mainPanel
             // 
             this.mainPanel.BackColor = System.Drawing.Color.White;
-            this.mainPanel.Controls.Add(this.lblUser);
-            this.mainPanel.Controls.Add(this.cmbUser);
             this.mainPanel.Controls.Add(this.btnGenerate);
             this.mainPanel.Controls.Add(this.lblReportTitle);
             this.mainPanel.Controls.Add(this.txtReport);
@@ -76,24 +73,7 @@ namespace TaskManagementApp
             this.mainPanel.Name = "mainPanel";
             this.mainPanel.Size = new System.Drawing.Size(860, 590);
             this.mainPanel.TabIndex = 1;
-            // 
-            // lblUser
-            // 
-            this.lblUser.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
-            this.lblUser.Location = new System.Drawing.Point(20, 20);
-            this.lblUser.Name = "lblUser";
-            this.lblUser.Size = new System.Drawing.Size(120, 25);
-            this.lblUser.TabIndex = 0;
-            this.lblUser.Text = "Select User:";
-            // 
-            // cmbUser
-            // 
-            this.cmbUser.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbUser.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.cmbUser.Location = new System.Drawing.Point(140, 20);
-            this.cmbUser.Name = "cmbUser";
-            this.cmbUser.Size = new System.Drawing.Size(450, 31);
-            this.cmbUser.TabIndex = 1;
+
             // 
             // btnGenerate
             // 
@@ -103,13 +83,14 @@ namespace TaskManagementApp
             this.btnGenerate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnGenerate.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
             this.btnGenerate.ForeColor = System.Drawing.Color.White;
-            this.btnGenerate.Location = new System.Drawing.Point(610, 17);
+            this.btnGenerate.Location = new System.Drawing.Point(20, 20);
             this.btnGenerate.Name = "btnGenerate";
-            this.btnGenerate.Size = new System.Drawing.Size(230, 38);
-            this.btnGenerate.TabIndex = 2;
-            this.btnGenerate.Text = "Generate Report";
+            this.btnGenerate.Size = new System.Drawing.Size(820, 40);
+            this.btnGenerate.TabIndex = 0;
+            this.btnGenerate.Text = "▶ Generate All 4 Aggregation Reports";
             this.btnGenerate.UseVisualStyleBackColor = false;
             this.btnGenerate.Click += new System.EventHandler(this.btnGenerate_Click);
+
             // 
             // lblReportTitle
             // 
@@ -117,8 +98,9 @@ namespace TaskManagementApp
             this.lblReportTitle.Location = new System.Drawing.Point(20, 75);
             this.lblReportTitle.Name = "lblReportTitle";
             this.lblReportTitle.Size = new System.Drawing.Size(200, 25);
-            this.lblReportTitle.TabIndex = 3;
+            this.lblReportTitle.TabIndex = 1;
             this.lblReportTitle.Text = "Report Output:";
+
             // 
             // txtReport
             // 
@@ -130,8 +112,9 @@ namespace TaskManagementApp
             this.txtReport.ReadOnly = true;
             this.txtReport.ScrollBars = System.Windows.Forms.ScrollBars.Both;
             this.txtReport.Size = new System.Drawing.Size(820, 420);
-            this.txtReport.TabIndex = 4;
+            this.txtReport.TabIndex = 2;
             this.txtReport.WordWrap = false;
+
             // 
             // btnExport
             // 
@@ -144,10 +127,11 @@ namespace TaskManagementApp
             this.btnExport.Location = new System.Drawing.Point(20, 540);
             this.btnExport.Name = "btnExport";
             this.btnExport.Size = new System.Drawing.Size(400, 40);
-            this.btnExport.TabIndex = 5;
+            this.btnExport.TabIndex = 3;
             this.btnExport.Text = "💾 Export to File";
             this.btnExport.UseVisualStyleBackColor = false;
             this.btnExport.Click += new System.EventHandler(this.btnExport_Click);
+
             // 
             // btnClose
             // 
@@ -160,10 +144,11 @@ namespace TaskManagementApp
             this.btnClose.Location = new System.Drawing.Point(440, 540);
             this.btnClose.Name = "btnClose";
             this.btnClose.Size = new System.Drawing.Size(400, 40);
-            this.btnClose.TabIndex = 6;
+            this.btnClose.TabIndex = 4;
             this.btnClose.Text = "Close";
             this.btnClose.UseVisualStyleBackColor = false;
             this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
+
             // 
             // ReportForm
             // 
@@ -174,13 +159,13 @@ namespace TaskManagementApp
             this.MaximizeBox = false;
             this.Name = "ReportForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Generate Reports";
+            this.Text = "Aggregation Pipeline Reports";
+            this.Load += new System.EventHandler(this.ReportForm_Load);
             this.header.ResumeLayout(false);
             this.header.PerformLayout();
             this.mainPanel.ResumeLayout(false);
-            this.mainPanel.PerformLayout();
+            this.mainPanel.ResumeLayout(false);
             this.ResumeLayout(false);
-
         }
         #endregion
     }
