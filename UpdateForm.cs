@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using MongoDB.Bson;
@@ -35,6 +34,10 @@ namespace TaskManagementApp
         {
             LoadUsers();
             LoadTasks();
+
+            // Initialize dropdowns
+            if (cmbStepStatus.Items.Count > 0)
+                cmbStepStatus.SelectedIndex = 0;
         }
 
         // ============================= USER MANAGEMENT =============================
@@ -85,6 +88,14 @@ namespace TaskManagementApp
                 return;
             }
 
+            if (string.IsNullOrWhiteSpace(txtUsername.Text) ||
+                string.IsNullOrWhiteSpace(txtPassword.Text) ||
+                string.IsNullOrWhiteSpace(txtRole.Text))
+            {
+                MessageBox.Show("Please fill in all fields.");
+                return;
+            }
+
             try
             {
                 var id = ObjectId.Parse(cmbUsers.SelectedItem.ToString());
@@ -96,7 +107,7 @@ namespace TaskManagementApp
 
                 _users.UpdateOne(Builders<BsonDocument>.Filter.Eq("_id", id), update);
 
-                LogAudit(LoginForm.LoggedInUserID, "UpdateUser", $"Updated user {id}");
+                LogAudit(LoginForm.LoggedInUsername, "Update User", $"Updated user: {txtUsername.Text}");
                 MessageBox.Show("User updated!");
             }
             catch (Exception ex)
@@ -176,20 +187,12 @@ namespace TaskManagementApp
             {
                 var step = s.AsBsonDocument;
 
-                string id = step.GetValue("StepID", step.GetValue("Id", "")).ToString();
-                string desc = step.GetValue("StepDescription", step.GetValue("Description", "")).ToString();
-                string status = step.GetValue("StepStatus", step.GetValue("Status", "")).ToString();
+                // Handle both field name variations
+                string id = step.GetValue("StepID", "").ToString();
+                string desc = step.GetValue("StepDescription", "").ToString();
+                string status = step.GetValue("StepStatus", "Pending").ToString();
 
-                string signed = "Not-Signed";
-                if (step.Contains("SignedOff"))
-                {
-                    signed = step["SignedOff"]
-                        .AsBsonDocument
-                        .GetValue("Status", new BsonString("Not-Signed"))
-                        .ToString();
-                }
-
-                dgvSteps.Rows.Add(id, desc, status, signed);
+                dgvSteps.Rows.Add(id, desc, status);
             }
         }
 
@@ -198,6 +201,13 @@ namespace TaskManagementApp
             if (cmbTasks.SelectedItem == null)
             {
                 MessageBox.Show("Pick a task.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(txtTaskUserID.Text) ||
+                string.IsNullOrWhiteSpace(txtTaskTitle.Text))
+            {
+                MessageBox.Show("Please fill in required fields.");
                 return;
             }
 
@@ -223,7 +233,7 @@ namespace TaskManagementApp
                 );
 
                 MessageBox.Show("Task updated!");
-                LogAudit(LoginForm.LoggedInUserID, "UpdateTask", $"Updated task {tid}");
+                LogAudit(LoginForm.LoggedInUsername, "Update Task", $"Updated task: {tid}");
             }
             catch (Exception ex)
             {
@@ -242,13 +252,16 @@ namespace TaskManagementApp
             txtStepID.Text = row.Cells["StepID"].Value?.ToString() ?? "";
             txtStepDescription.Text = row.Cells["Description"].Value?.ToString() ?? "";
 
-            cmbStepStatus.SelectedItem = row.Cells["Status"].Value?.ToString();
-            cmbSignedOff.SelectedItem = row.Cells["SignedOffStatus"].Value?.ToString();
+            string status = row.Cells["Status"].Value?.ToString() ?? "Pending";
+            if (cmbStepStatus.Items.Contains(status))
+                cmbStepStatus.SelectedItem = status;
+            else
+                cmbStepStatus.SelectedIndex = 0;
         }
 
         private void dgvSteps_CellBeginEdit(object sender, DataGridViewCellCancelEventArgs e)
         {
-            // Admin can freely edit (no sequential lock)
+            // Admin can freely edit
         }
 
         private void btnUpdateStep_Click(object sender, EventArgs e)
@@ -289,16 +302,15 @@ namespace TaskManagementApp
                     return;
                 }
 
+                // Update step with correct schema
                 var updatedStep = new BsonDocument
                 {
                     { "StepID", stepID },
                     { "StepDescription", txtStepDescription.Text },
-                    { "Description", txtStepDescription.Text },
                     { "StepStatus", cmbStepStatus.SelectedItem?.ToString() ?? "Pending" },
-                    { "Status", cmbStepStatus.SelectedItem?.ToString() ?? "Pending" },
                     { "SignedOff", new BsonDocument
                         {
-                            { "Status", cmbSignedOff.SelectedItem?.ToString() ?? "Not-Signed" },
+                            { "Status", "Not-Signed" },
                             { "Date", DateTime.UtcNow }
                         }
                     }
@@ -306,9 +318,7 @@ namespace TaskManagementApp
 
                 steps[index] = updatedStep;
 
-                // ==============================
-                // ⭐ FIX: UPDATE TASK STATUS
-                // ==============================
+                // Update TaskStatus based on step completion
                 bool allCompleted = true;
                 bool anyCompleted = false;
 
@@ -317,7 +327,7 @@ namespace TaskManagementApp
                     var sd = s.AsBsonDocument;
                     string st = sd.GetValue("StepStatus", "Pending").ToString();
 
-                    if (st == "Pending")
+                    if (st != "Completed")
                         allCompleted = false;
 
                     if (st == "Completed")
@@ -327,7 +337,7 @@ namespace TaskManagementApp
                 if (allCompleted)
                     task["TaskStatus"] = "Completed";
                 else if (anyCompleted)
-                    task["TaskStatus"] = "In Progress";
+                    task["TaskStatus"] = "In-Progress";
                 else
                     task["TaskStatus"] = "Pending";
 
@@ -339,7 +349,7 @@ namespace TaskManagementApp
 
                 MessageBox.Show("Step updated successfully!");
 
-                LogAudit(LoginForm.LoggedInUserID, "Admin Update Step",
+                LogAudit(LoginForm.LoggedInUsername, "Update Step",
                     $"Updated Step {stepID} in Task {taskID}");
 
                 LoadStepsForTask(task);
@@ -355,26 +365,29 @@ namespace TaskManagementApp
         {
             txtStepID.Text = "";
             txtStepDescription.Text = "";
-            cmbStepStatus.SelectedIndex = -1;
-            cmbSignedOff.SelectedIndex = -1;
+            if (cmbStepStatus.Items.Count > 0)
+                cmbStepStatus.SelectedIndex = 0;
         }
 
         // ============================= LOGGING =============================
 
-        private void LogAudit(string uid, string action, string details)
+        private void LogAudit(string username, string action, string details)
         {
             try
             {
                 _auditLogs.InsertOne(new BsonDocument
                 {
                     { "LogID", Guid.NewGuid().ToString() },
-                    { "UserID", uid },
+                    { "Username", username },
                     { "Action", action },
                     { "Details", details },
-                    { "Timestamp", DateTime.Now }
+                    { "Timestamp", DateTime.UtcNow }
                 });
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Audit log error: " + ex.Message);
+            }
         }
 
         private void btnRefresh_Click(object sender, EventArgs e)

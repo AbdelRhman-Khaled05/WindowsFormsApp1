@@ -14,12 +14,6 @@ namespace TaskManagementApp
         private Button btnRefresh;
         private Button btnClose;
 
-        private DataGridViewTextBoxColumn colLogID;
-        private DataGridViewTextBoxColumn colUsername;
-        private DataGridViewTextBoxColumn colAction;
-        private DataGridViewTextBoxColumn colDetails;
-        private DataGridViewTextBoxColumn colTimestamp;
-
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -30,84 +24,100 @@ namespace TaskManagementApp
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            this.header = new System.Windows.Forms.Panel();
+            this.lblTitle = new System.Windows.Forms.Label();
+            this.dgvAuditLogs = new System.Windows.Forms.DataGridView();
+            this.lblCount = new System.Windows.Forms.Label();
+            this.btnRefresh = new System.Windows.Forms.Button();
+            this.btnClose = new System.Windows.Forms.Button();
 
-            this.header = new Panel();
-            this.lblTitle = new Label();
-            this.dgvAuditLogs = new DataGridView();
-            this.lblCount = new Label();
-            this.btnRefresh = new Button();
-            this.btnClose = new Button();
+            this.SuspendLayout();
 
-            this.colLogID = new DataGridViewTextBoxColumn();
-            this.colUsername = new DataGridViewTextBoxColumn();
-            this.colAction = new DataGridViewTextBoxColumn();
-            this.colDetails = new DataGridViewTextBoxColumn();
-            this.colTimestamp = new DataGridViewTextBoxColumn();
-
-            // HEADER PANEL
-            this.header.BackColor = Color.FromArgb(60, 130, 200);
-            this.header.Dock = DockStyle.Top;
-            this.header.Size = new Size(1000, 70);
+            // header
+            this.header.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(130)))), ((int)(((byte)(200)))));
             this.header.Controls.Add(this.lblTitle);
+            this.header.Dock = System.Windows.Forms.DockStyle.Top;
+            this.header.Location = new System.Drawing.Point(0, 0);
+            this.header.Name = "header";
+            this.header.Size = new System.Drawing.Size(1000, 70);
+            this.header.TabIndex = 0;
 
-            // HEADER LABEL
+            // lblTitle
+            this.lblTitle.AutoSize = false;
+            this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 18F, System.Drawing.FontStyle.Bold);
+            this.lblTitle.ForeColor = System.Drawing.Color.White;
+            this.lblTitle.Location = new System.Drawing.Point(20, 20);
+            this.lblTitle.Name = "lblTitle";
+            this.lblTitle.Size = new System.Drawing.Size(400, 35);
+            this.lblTitle.TabIndex = 0;
             this.lblTitle.Text = "📋 Audit Logs";
-            this.lblTitle.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
-            this.lblTitle.ForeColor = Color.White;
-            this.lblTitle.Location = new Point(20, 20);
 
-            // DATAGRIDVIEW
-            this.dgvAuditLogs.Location = new Point(20, 90);
-            this.dgvAuditLogs.Size = new Size(960, 440);
+            // dgvAuditLogs
+            this.dgvAuditLogs.AllowUserToAddRows = false;
+            this.dgvAuditLogs.AllowUserToDeleteRows = false;
+            this.dgvAuditLogs.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.dgvAuditLogs.BackgroundColor = System.Drawing.Color.White;
+            this.dgvAuditLogs.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+            this.dgvAuditLogs.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvAuditLogs.Location = new System.Drawing.Point(20, 90);
+            this.dgvAuditLogs.Name = "dgvAuditLogs";
             this.dgvAuditLogs.ReadOnly = true;
             this.dgvAuditLogs.RowHeadersVisible = false;
-            this.dgvAuditLogs.AllowUserToAddRows = false;
-            this.dgvAuditLogs.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            this.dgvAuditLogs.Size = new System.Drawing.Size(960, 410);
+            this.dgvAuditLogs.TabIndex = 1;
 
-            // ADD COLUMNS
-            this.colLogID.HeaderText = "LogID";
-            this.colUsername.HeaderText = "Username";
-            this.colAction.HeaderText = "Action";
-            this.colDetails.HeaderText = "Details";
-            this.colTimestamp.HeaderText = "Timestamp";
-
-            this.dgvAuditLogs.Columns.AddRange(new DataGridViewColumn[]
-            {
-                colLogID, colUsername, colAction, colDetails, colTimestamp
-            });
-
-            // LOGS COUNT LABEL
-            this.lblCount.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            this.lblCount.Location = new Point(20, 540);
+            // lblCount
+            this.lblCount.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.lblCount.Location = new System.Drawing.Point(20, 510);
+            this.lblCount.Name = "lblCount";
+            this.lblCount.Size = new System.Drawing.Size(300, 25);
+            this.lblCount.TabIndex = 2;
             this.lblCount.Text = "Total Logs: 0";
 
-            // REFRESH BUTTON
+            // btnRefresh
+            this.btnRefresh.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(160)))), ((int)(((byte)(80)))));
+            this.btnRefresh.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnRefresh.FlatAppearance.BorderSize = 0;
+            this.btnRefresh.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnRefresh.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
+            this.btnRefresh.ForeColor = System.Drawing.Color.White;
+            this.btnRefresh.Location = new System.Drawing.Point(760, 505);
+            this.btnRefresh.Name = "btnRefresh";
+            this.btnRefresh.Size = new System.Drawing.Size(110, 40);
+            this.btnRefresh.TabIndex = 3;
             this.btnRefresh.Text = "↻ Refresh";
-            this.btnRefresh.BackColor = Color.FromArgb(40, 160, 80);
-            this.btnRefresh.ForeColor = Color.White;
-            this.btnRefresh.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
-            this.btnRefresh.Location = new Point(740, 540);
-            this.btnRefresh.Size = new Size(120, 40);
-            this.btnRefresh.Click += btnRefresh_Click;
+            this.btnRefresh.UseVisualStyleBackColor = false;
+            this.btnRefresh.Click += new System.EventHandler(this.btnRefresh_Click);
 
-            // CLOSE BUTTON
+            // btnClose
+            this.btnClose.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(100)))), ((int)(((byte)(100)))));
+            this.btnClose.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnClose.FlatAppearance.BorderSize = 0;
+            this.btnClose.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnClose.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
+            this.btnClose.ForeColor = System.Drawing.Color.White;
+            this.btnClose.Location = new System.Drawing.Point(880, 505);
+            this.btnClose.Name = "btnClose";
+            this.btnClose.Size = new System.Drawing.Size(100, 40);
+            this.btnClose.TabIndex = 4;
             this.btnClose.Text = "Close";
-            this.btnClose.BackColor = Color.FromArgb(100, 100, 100);
-            this.btnClose.ForeColor = Color.White;
-            this.btnClose.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
-            this.btnClose.Location = new Point(870, 540);
-            this.btnClose.Size = new Size(110, 40);
-            this.btnClose.Click += (s, e) => this.Close();
+            this.btnClose.UseVisualStyleBackColor = false;
+            this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
 
-            // FORM SETTINGS
-            this.ClientSize = new Size(1000, 600);
+            // AuditLogsForm
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(1000, 560);
             this.Controls.Add(this.header);
             this.Controls.Add(this.dgvAuditLogs);
             this.Controls.Add(this.lblCount);
             this.Controls.Add(this.btnRefresh);
             this.Controls.Add(this.btnClose);
+            this.Name = "AuditLogsForm";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Audit Logs";
-            this.StartPosition = FormStartPosition.CenterScreen;
+            this.Load += new System.EventHandler(this.AuditLogsForm_Load);
+            this.ResumeLayout(false);
         }
     }
 }

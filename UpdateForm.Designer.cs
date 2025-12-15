@@ -6,18 +6,14 @@ namespace TaskManagementApp
     partial class UpdateForm
     {
         private System.ComponentModel.IContainer components = null;
-
-        // Header
         private Panel header;
         private Label lblTitle;
         private Button btnRefresh;
-
-        // Tabs
         private TabControl tabControl;
         private TabPage tabUser;
         private TabPage tabTask;
 
-        // User Tab Controls
+        // User Tab
         private Label lblSelectUser;
         private ComboBox cmbUsers;
         private Label lblUsername;
@@ -28,7 +24,7 @@ namespace TaskManagementApp
         private TextBox txtRole;
         private Button btnUpdateUser;
 
-        // Task Tab Controls
+        // Task Tab
         private Label lblSelectTask;
         private ComboBox cmbTasks;
         private Label lblTaskUserID;
@@ -43,8 +39,11 @@ namespace TaskManagementApp
 
         // Steps Grid
         private DataGridView dgvSteps;
+        private DataGridViewTextBoxColumn colStepID;
+        private DataGridViewTextBoxColumn colDescription;
+        private DataGridViewTextBoxColumn colStatus;
 
-        // Step Editor Controls
+        // Step Editor
         private Label lblStepEditorTitle;
         private Label lblStepID;
         private TextBox txtStepID;
@@ -52,10 +51,6 @@ namespace TaskManagementApp
         private TextBox txtStepDescription;
         private Label lblStepStatus;
         private ComboBox cmbStepStatus;
-        private Label lblSignedOff;
-        private ComboBox cmbSignedOff;
-
-        // Update Step Button
         private Button btnUpdateStep;
 
         protected override void Dispose(bool disposing)
@@ -65,14 +60,12 @@ namespace TaskManagementApp
             base.Dispose(disposing);
         }
 
-        #region Designer
+        #region Windows Form Designer generated code
         private void InitializeComponent()
         {
-            components = new System.ComponentModel.Container();
+            this.components = new System.ComponentModel.Container();
 
-            // =====================================================================
-            // HEADER
-            // =====================================================================
+            // Header
             this.header = new Panel();
             this.header.BackColor = Color.FromArgb(60, 130, 200);
             this.header.Dock = DockStyle.Top;
@@ -93,77 +86,66 @@ namespace TaskManagementApp
             this.btnRefresh.FlatStyle = FlatStyle.Flat;
             this.btnRefresh.FlatAppearance.BorderSize = 0;
             this.btnRefresh.Size = new Size(120, 35);
-            this.btnRefresh.Location = new Point(780, 20);
-            this.btnRefresh.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            this.btnRefresh.Location = new Point(860, 20);
+            this.btnRefresh.Cursor = Cursors.Hand;
             this.btnRefresh.Click += btnRefresh_Click;
 
             this.header.Controls.Add(lblTitle);
             this.header.Controls.Add(btnRefresh);
 
-            // =====================================================================
-            // TAB CONTROL
-            // =====================================================================
+            // Tab Control
             this.tabControl = new TabControl();
             this.tabControl.Font = new Font("Segoe UI", 10F);
-            // Make the tabs fill the remaining form area (below header)
             this.tabControl.Dock = DockStyle.Fill;
-            this.tabControl.Padding = new Point(10, 6);
 
-            // =====================================================================
-            // USER TAB
-            // =====================================================================
-            this.tabUser = new TabPage("Update User");
+            // ==================== USER TAB ====================
+            this.tabUser = new TabPage("👤 Update User");
             this.tabUser.BackColor = Color.White;
-            this.tabUser.AutoScroll = true;
 
             lblSelectUser = new Label();
             lblSelectUser.Text = "Select User:";
             lblSelectUser.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             lblSelectUser.Location = new Point(30, 30);
-            lblSelectUser.AutoSize = true;
+            lblSelectUser.Size = new Size(150, 25);
 
             cmbUsers = new ComboBox();
             cmbUsers.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbUsers.Location = new Point(200, 30);
-            cmbUsers.Size = new Size(620, 31);
-            cmbUsers.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            cmbUsers.Size = new Size(700, 31);
             cmbUsers.SelectedIndexChanged += cmbUsers_SelectedIndexChanged;
 
             lblUsername = new Label();
             lblUsername.Text = "Username:";
             lblUsername.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             lblUsername.Location = new Point(30, 80);
-            lblUsername.AutoSize = true;
+            lblUsername.Size = new Size(150, 25);
 
             txtUsername = new TextBox();
             txtUsername.Location = new Point(200, 80);
-            txtUsername.Size = new Size(620, 30);
-            txtUsername.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            txtUsername.Size = new Size(700, 30);
 
             lblPassword = new Label();
             lblPassword.Text = "Password:";
             lblPassword.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             lblPassword.Location = new Point(30, 130);
-            lblPassword.AutoSize = true;
+            lblPassword.Size = new Size(150, 25);
 
             txtPassword = new TextBox();
             txtPassword.Location = new Point(200, 130);
-            txtPassword.Size = new Size(620, 30);
-            txtPassword.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            txtPassword.Size = new Size(700, 30);
 
             lblRole = new Label();
             lblRole.Text = "Role:";
             lblRole.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             lblRole.Location = new Point(30, 180);
-            lblRole.AutoSize = true;
+            lblRole.Size = new Size(150, 25);
 
             txtRole = new TextBox();
             txtRole.Location = new Point(200, 180);
-            txtRole.Size = new Size(620, 30);
-            txtRole.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            txtRole.Size = new Size(700, 30);
 
             btnUpdateUser = new Button();
-            btnUpdateUser.Text = "Update User";
+            btnUpdateUser.Text = "✓ Update User";
             btnUpdateUser.BackColor = Color.FromArgb(60, 130, 200);
             btnUpdateUser.ForeColor = Color.White;
             btnUpdateUser.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
@@ -171,7 +153,7 @@ namespace TaskManagementApp
             btnUpdateUser.FlatAppearance.BorderSize = 0;
             btnUpdateUser.Size = new Size(200, 45);
             btnUpdateUser.Location = new Point(200, 240);
-            btnUpdateUser.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            btnUpdateUser.Cursor = Cursors.Hand;
             btnUpdateUser.Click += btnUpdateUser_Click;
 
             tabUser.Controls.Add(lblSelectUser);
@@ -184,75 +166,66 @@ namespace TaskManagementApp
             tabUser.Controls.Add(txtRole);
             tabUser.Controls.Add(btnUpdateUser);
 
-            // =====================================================================
-            // TASK TAB
-            // =====================================================================
-            this.tabTask = new TabPage("Update Task");
+            // ==================== TASK TAB ====================
+            this.tabTask = new TabPage("📋 Update Task");
             this.tabTask.BackColor = Color.White;
-            // enable scrolling on task tab so step editor is reachable
             this.tabTask.AutoScroll = true;
-            this.tabTask.AutoScrollMinSize = new Size(0, 1100);
 
             lblSelectTask = new Label();
             lblSelectTask.Text = "Select Task:";
             lblSelectTask.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             lblSelectTask.Location = new Point(30, 30);
-            lblSelectTask.AutoSize = true;
+            lblSelectTask.Size = new Size(150, 25);
 
             cmbTasks = new ComboBox();
             cmbTasks.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbTasks.Location = new Point(200, 30);
-            cmbTasks.Size = new Size(620, 31);
-            cmbTasks.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            cmbTasks.Size = new Size(700, 31);
             cmbTasks.SelectedIndexChanged += cmbTasks_SelectedIndexChanged;
 
             lblTaskUserID = new Label();
             lblTaskUserID.Text = "User ID:";
             lblTaskUserID.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             lblTaskUserID.Location = new Point(30, 80);
-            lblTaskUserID.AutoSize = true;
+            lblTaskUserID.Size = new Size(150, 25);
 
             txtTaskUserID = new TextBox();
             txtTaskUserID.Location = new Point(200, 80);
-            txtTaskUserID.Size = new Size(620, 30);
-            txtTaskUserID.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            txtTaskUserID.Size = new Size(700, 30);
 
             lblTaskTitle = new Label();
             lblTaskTitle.Text = "Title:";
             lblTaskTitle.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             lblTaskTitle.Location = new Point(30, 130);
-            lblTaskTitle.AutoSize = true;
+            lblTaskTitle.Size = new Size(150, 25);
 
             txtTaskTitle = new TextBox();
             txtTaskTitle.Location = new Point(200, 130);
-            txtTaskTitle.Size = new Size(620, 30);
-            txtTaskTitle.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            txtTaskTitle.Size = new Size(700, 30);
 
             lblTaskDescription = new Label();
             lblTaskDescription.Text = "Description:";
             lblTaskDescription.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             lblTaskDescription.Location = new Point(30, 180);
-            lblTaskDescription.AutoSize = true;
+            lblTaskDescription.Size = new Size(150, 25);
 
             txtTaskDescription = new TextBox();
             txtTaskDescription.Multiline = true;
             txtTaskDescription.Location = new Point(200, 180);
-            txtTaskDescription.Size = new Size(620, 60);
-            txtTaskDescription.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            txtTaskDescription.Size = new Size(700, 60);
 
             lblTaskDueDate = new Label();
             lblTaskDueDate.Text = "Due Date:";
             lblTaskDueDate.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             lblTaskDueDate.Location = new Point(30, 260);
-            lblTaskDueDate.AutoSize = true;
+            lblTaskDueDate.Size = new Size(150, 25);
 
             dtpDueDate = new DateTimePicker();
             dtpDueDate.Location = new Point(200, 260);
             dtpDueDate.Size = new Size(300, 30);
-            dtpDueDate.Anchor = AnchorStyles.Top | AnchorStyles.Left;
 
             btnUpdateTask = new Button();
-            btnUpdateTask.Text = "Update Task";
+            btnUpdateTask.Text = "✓ Update Task";
             btnUpdateTask.BackColor = Color.FromArgb(60, 130, 200);
             btnUpdateTask.ForeColor = Color.White;
             btnUpdateTask.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
@@ -260,134 +233,89 @@ namespace TaskManagementApp
             btnUpdateTask.FlatAppearance.BorderSize = 0;
             btnUpdateTask.Size = new Size(200, 45);
             btnUpdateTask.Location = new Point(200, 310);
-            btnUpdateTask.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            btnUpdateTask.Cursor = Cursors.Hand;
             btnUpdateTask.Click += btnUpdateTask_Click;
 
-            // =====================================================================
-            // STEPS GRID
-            // =====================================================================
+            // Steps Grid
             dgvSteps = new DataGridView();
-            dgvSteps.Location = new Point(30, 360);
-            // give grid a fairly large height; tabTask has scrolling
-            dgvSteps.Size = new Size(820, 220);
-            dgvSteps.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            dgvSteps.Location = new Point(30, 380);
+            dgvSteps.Size = new Size(900, 220);
             dgvSteps.AllowUserToAddRows = false;
             dgvSteps.AllowUserToDeleteRows = false;
             dgvSteps.MultiSelect = false;
             dgvSteps.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvSteps.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.DisplayedCells;
+            dgvSteps.ReadOnly = false;
             dgvSteps.CellClick += dgvSteps_CellClick;
             dgvSteps.CellBeginEdit += dgvSteps_CellBeginEdit;
-            dgvSteps.ReadOnly = false;
 
-            var colID = new DataGridViewTextBoxColumn();
-            colID.Name = "StepID";
-            colID.HeaderText = "Step ID";
-            colID.Width = 90;
-            colID.ReadOnly = true;
+            colStepID = new DataGridViewTextBoxColumn();
+            colStepID.Name = "StepID";
+            colStepID.HeaderText = "Step ID";
+            colStepID.Width = 100;
+            colStepID.ReadOnly = true;
 
-            var colDesc = new DataGridViewTextBoxColumn();
-            colDesc.Name = "Description";
-            colDesc.HeaderText = "Description";
-            colDesc.Width = 480;
-            colDesc.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            colDescription = new DataGridViewTextBoxColumn();
+            colDescription.Name = "Description";
+            colDescription.HeaderText = "Description";
+            colDescription.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
 
-            var colStatus = new DataGridViewTextBoxColumn();
+            colStatus = new DataGridViewTextBoxColumn();
             colStatus.Name = "Status";
             colStatus.HeaderText = "Status";
             colStatus.Width = 120;
 
-            var colSigned = new DataGridViewTextBoxColumn();
-            colSigned.Name = "SignedOffStatus";
-            colSigned.HeaderText = "SignedOff";
-            colSigned.Visible = false;
+            dgvSteps.Columns.AddRange(colStepID, colDescription, colStatus);
 
-            dgvSteps.Columns.AddRange(colID, colDesc, colStatus, colSigned);
-
-            // =====================================================================
-            // STEP EDITOR
-            // =====================================================================
+            // Step Editor
             lblStepEditorTitle = new Label();
-            lblStepEditorTitle.Text = "Step Editor (Admin)";
-            lblStepEditorTitle.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            lblStepEditorTitle.Location = new Point(30, 600);
-            lblStepEditorTitle.AutoSize = true;
+            lblStepEditorTitle.Text = "🔧 Step Editor (Admin Only)";
+            lblStepEditorTitle.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            lblStepEditorTitle.Location = new Point(30, 620);
+            lblStepEditorTitle.Size = new Size(300, 25);
 
             lblStepID = new Label();
             lblStepID.Text = "Step ID:";
-            lblStepID.Location = new Point(30, 635);
-            lblStepID.AutoSize = true;
+            lblStepID.Location = new Point(30, 660);
+            lblStepID.Size = new Size(100, 25);
 
             txtStepID = new TextBox();
-            txtStepID.Location = new Point(100, 630);
-            txtStepID.Size = new Size(120, 26);
+            txtStepID.Location = new Point(140, 660);
+            txtStepID.Size = new Size(120, 30);
             txtStepID.ReadOnly = true;
 
             lblStepDesc = new Label();
             lblStepDesc.Text = "Description:";
-            lblStepDesc.Location = new Point(240, 635);
-            lblStepDesc.AutoSize = true;
+            lblStepDesc.Location = new Point(30, 710);
+            lblStepDesc.Size = new Size(100, 25);
 
             txtStepDescription = new TextBox();
             txtStepDescription.Multiline = true;
-            txtStepDescription.Location = new Point(330, 630);
-            txtStepDescription.Size = new Size(520, 70);
+            txtStepDescription.Location = new Point(140, 710);
+            txtStepDescription.Size = new Size(790, 60);
 
             lblStepStatus = new Label();
             lblStepStatus.Text = "Status:";
-            lblStepStatus.Location = new Point(30, 715);
-            lblStepStatus.AutoSize = true;
+            lblStepStatus.Location = new Point(30, 790);
+            lblStepStatus.Size = new Size(100, 25);
 
             cmbStepStatus = new ComboBox();
             cmbStepStatus.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbStepStatus.Items.AddRange(new string[] { "Pending", "Completed" });
-            cmbStepStatus.Location = new Point(100, 710);
-            cmbStepStatus.Size = new Size(120, 26);
+            cmbStepStatus.Location = new Point(140, 790);
+            cmbStepStatus.Size = new Size(200, 31);
 
-            lblSignedOff = new Label();
-            lblSignedOff.Text = "SignedOff:";
-            lblSignedOff.Location = new Point(240, 715);
-            lblSignedOff.AutoSize = true;
-
-            cmbSignedOff = new ComboBox();
-            cmbSignedOff.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbSignedOff.Items.AddRange(new string[] { "Signed", "Not-Signed" });
-            cmbSignedOff.Location = new Point(330, 710);
-            cmbSignedOff.Size = new Size(140, 26);
-
-            // FIXED UPDATE BUTTON — MOVED DOWN (VISIBLE!)
             btnUpdateStep = new Button();
-            btnUpdateStep.Text = "Update Step";
-            btnUpdateStep.BackColor = Color.FromArgb(255, 160, 0);
+            btnUpdateStep.Text = "✓ Update Step";
+            btnUpdateStep.BackColor = Color.FromArgb(255, 140, 0);
             btnUpdateStep.ForeColor = Color.White;
             btnUpdateStep.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             btnUpdateStep.FlatStyle = FlatStyle.Flat;
             btnUpdateStep.FlatAppearance.BorderSize = 0;
             btnUpdateStep.Size = new Size(200, 45);
-
-            // NEW POSITION (MUCH LOWER = ALWAYS VISIBLE)
-            btnUpdateStep.Location = new Point(30, 760);
-
-            btnUpdateStep.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            btnUpdateStep.Location = new Point(140, 840);
+            btnUpdateStep.Cursor = Cursors.Hand;
             btnUpdateStep.Click += btnUpdateStep_Click;
 
-            // Add controls
-            tabTask.Controls.Add(lblStepEditorTitle);
-            tabTask.Controls.Add(lblStepID);
-            tabTask.Controls.Add(txtStepID);
-            tabTask.Controls.Add(lblStepDesc);
-            tabTask.Controls.Add(txtStepDescription);
-            tabTask.Controls.Add(lblStepStatus);
-            tabTask.Controls.Add(cmbStepStatus);
-            tabTask.Controls.Add(lblSignedOff);
-            tabTask.Controls.Add(cmbSignedOff);
-            tabTask.Controls.Add(btnUpdateStep);
-
-            // Important: ensure scrolling reveals everything
-            tabTask.AutoScrollMinSize = new Size(0, 900);
-
-
-            // Add controls to Task tab
             tabTask.Controls.Add(lblSelectTask);
             tabTask.Controls.Add(cmbTasks);
             tabTask.Controls.Add(lblTaskUserID);
@@ -400,8 +328,6 @@ namespace TaskManagementApp
             tabTask.Controls.Add(dtpDueDate);
             tabTask.Controls.Add(btnUpdateTask);
             tabTask.Controls.Add(dgvSteps);
-
-            // Editor controls (below grid)
             tabTask.Controls.Add(lblStepEditorTitle);
             tabTask.Controls.Add(lblStepID);
             tabTask.Controls.Add(txtStepID);
@@ -409,30 +335,21 @@ namespace TaskManagementApp
             tabTask.Controls.Add(txtStepDescription);
             tabTask.Controls.Add(lblStepStatus);
             tabTask.Controls.Add(cmbStepStatus);
-            tabTask.Controls.Add(lblSignedOff);
-            tabTask.Controls.Add(cmbSignedOff);
             tabTask.Controls.Add(btnUpdateStep);
 
-            // Add tabs to tabControl
+            // Add tabs
             tabControl.Controls.Add(tabUser);
             tabControl.Controls.Add(tabTask);
 
-            // =====================================================================
-            // FINAL FORM SETTINGS
-            // =====================================================================
-            this.ClientSize = new Size(980, 820);
-            // Add header first so it docks to top, then tabControl (docked fill)
+            // Form settings
+            this.ClientSize = new Size(1000, 750);
             this.Controls.Add(tabControl);
             this.Controls.Add(header);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.StartPosition = FormStartPosition.CenterScreen;
             this.MaximizeBox = false;
-            this.Text = "Update Data";
+            this.Text = "Update Data - Admin";
             this.Load += UpdateForm_Load;
-
-            // Enable form scrolling if window is smaller than content
-            this.AutoScroll = true;
-            this.AutoScrollMinSize = new Size(0, 1100);
         }
         #endregion
     }

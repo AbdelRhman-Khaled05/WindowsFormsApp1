@@ -18,7 +18,6 @@ namespace TaskManagementApp
             {
                 _db = MongoConnection.GetDatabase();
                 _auditLogs = _db.GetCollection<BsonDocument>("AuditLogs");
-                LoadAuditLogs();
             }
             catch (Exception ex)
             {
@@ -26,22 +25,36 @@ namespace TaskManagementApp
             }
         }
 
-        private void EnsureColumns()
+        private void AuditLogsForm_Load(object sender, EventArgs e)
         {
-            if (dgvAuditLogs.Columns.Count == 0)
-            {
-                dgvAuditLogs.Columns.Add("LogID", "LogID");
-                dgvAuditLogs.Columns.Add("Username", "Username");
-                dgvAuditLogs.Columns.Add("Action", "Action");
-                dgvAuditLogs.Columns.Add("Details", "Details");
-                dgvAuditLogs.Columns.Add("Timestamp", "Timestamp");
+            SetupDataGridView();
+            LoadAuditLogs();
+        }
 
-                dgvAuditLogs.Columns["LogID"].Width = 220;
-                dgvAuditLogs.Columns["Username"].Width = 150;
-                dgvAuditLogs.Columns["Action"].Width = 140;
-                dgvAuditLogs.Columns["Details"].Width = 350;
-                dgvAuditLogs.Columns["Timestamp"].Width = 140;
-            }
+        private void SetupDataGridView()
+        {
+            dgvAuditLogs.Rows.Clear();
+            dgvAuditLogs.Columns.Clear();
+
+            // Add columns
+            dgvAuditLogs.Columns.Add("LogID", "Log ID");
+            dgvAuditLogs.Columns.Add("Username", "Username");
+            dgvAuditLogs.Columns.Add("Action", "Action");
+            dgvAuditLogs.Columns.Add("Details", "Details");
+            dgvAuditLogs.Columns.Add("Timestamp", "Timestamp");
+
+            // Set column widths
+            dgvAuditLogs.Columns["LogID"].Width = 200;
+            dgvAuditLogs.Columns["Username"].Width = 150;
+            dgvAuditLogs.Columns["Action"].Width = 150;
+            dgvAuditLogs.Columns["Details"].Width = 300;
+            dgvAuditLogs.Columns["Timestamp"].Width = 160;
+
+            // Styling
+            dgvAuditLogs.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+            dgvAuditLogs.ColumnHeadersDefaultCellStyle.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            dgvAuditLogs.DefaultCellStyle.Font = new System.Drawing.Font("Segoe UI", 9F);
+            dgvAuditLogs.AlternatingRowsDefaultCellStyle.BackColor = System.Drawing.Color.FromArgb(240, 240, 240);
         }
 
         private void LoadAuditLogs()
@@ -56,13 +69,25 @@ namespace TaskManagementApp
 
                 foreach (var log in logs)
                 {
-                    dgvAuditLogs.Rows.Add(
-                        log.GetValue("LogID", "").ToString(),
-                        log.GetValue("Username", log.GetValue("UserID", "")).ToString(), // FIXED
-                        log.GetValue("Action", "").ToString(),
-                        log.GetValue("Details", "").ToString(),
-                        log.GetValue("Timestamp", DateTime.Now).ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
-                    );
+                    string logID = log.GetValue("LogID", "").ToString();
+
+                    // Check both Username and UserID for backwards compatibility
+                    string username = log.Contains("Username")
+                        ? log.GetValue("Username", "Unknown").ToString()
+                        : log.GetValue("UserID", "Unknown").ToString();
+
+                    string action = log.GetValue("Action", "").ToString();
+                    string details = log.GetValue("Details", "").ToString();
+
+                    DateTime timestamp = DateTime.UtcNow;
+                    if (log.Contains("Timestamp") && log["Timestamp"].IsValidDateTime)
+                    {
+                        timestamp = log["Timestamp"].ToUniversalTime();
+                    }
+
+                    string timestampStr = timestamp.ToString("yyyy-MM-dd HH:mm:ss");
+
+                    dgvAuditLogs.Rows.Add(logID, username, action, details, timestampStr);
                 }
 
                 lblCount.Text = $"Total Logs: {logs.Count}";
@@ -76,17 +101,12 @@ namespace TaskManagementApp
         private void btnRefresh_Click(object sender, EventArgs e)
         {
             LoadAuditLogs();
-            MessageBox.Show("Audit logs refreshed.");
+            MessageBox.Show("Audit logs refreshed successfully!", "Refresh", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        private void header_Paint(object sender, PaintEventArgs e)
+        private void btnClose_Click(object sender, EventArgs e)
         {
-            // Empty event handler
-        }
-
-        private void header_Paint_1(object sender, PaintEventArgs e)
-        {
-            // Empty event handler
+            this.Close();
         }
     }
 }
