@@ -1,320 +1,504 @@
-﻿// ========================================
-// Task Management System - MongoDB Script
-// Phase 2 Requirements - CORRECTED
-// For MongoDB Atlas
-// ========================================
+﻿// ========================================================================
+// MongoDB Script for Task Management System - Phase 2
+// Database: TaskManagmentDB
+// ========================================================================
 
-// 1. USE YOUR EXISTING DATABASE
+// 1. DATABASE & COLLECTION CREATION
+// ========================================================================
+
 use TaskManagmentDB;
 
-print("=== Connected to Database: TaskManagmentDB ===\n");
+// Drop existing collections for clean setup (optional)
+db.Users.drop();
+db.Tasks.drop();
+db.AuditLogs.drop();
 
-// 2. Check existing collections
-print("=== Current Collections ===");
-show collections;
-print("\n");
+// Create collections
+db.createCollection("Users");
+db.createCollection("Tasks");
+db.createCollection("AuditLogs");
 
-// ========================================
-// 3. INSERT OPERATIONS (10+ documents)
-// ========================================
+print("Collections created successfully.");
 
-print("=== INSERTING SAMPLE USERS (Phase 2 Data) ===");
+// ========================================================================
+// 2. SCHEMA VALIDATION
+// ========================================================================
 
-// Get existing user IDs to use for foreign keys
-var existingUsers = db.Users.find().toArray();
-var userMap = {};
-existingUsers.forEach(function (user) {
-    userMap[user.UserID] = user._id;
+// Apply JSON Schema Validation on Tasks Collection
+db.runCommand({
+    collMod: "Tasks",
+    validator: {
+        $jsonSchema: {
+            bsonType: "object",
+            required: ["TaskID", "UserID", "Title", "TaskStatus", "Steps", "CreatedDate"],
+            properties: {
+                TaskID: {
+                    bsonType: "string",
+                    description: "Task ID must be a string and is required"
+                },
+                UserID: {
+                    bsonType: "objectId",
+                    description: "UserID must be an ObjectId referencing Users collection"
+                },
+                Title: {
+                    bsonType: "string",
+                    minLength: 5,
+                    description: "Title must be a string with minimum 5 characters"
+                },
+                Description: {
+                    bsonType: "string",
+                    description: "Description must be a string"
+                },
+                TaskStatus: {
+                    enum: ["Pending", "In-Progress", "Completed"],
+                    description: "TaskStatus must be one of: Pending, In-Progress, or Completed"
+                },
+                Steps: {
+                    bsonType: "array",
+                    description: "Steps must be an array of step objects",
+                    items: {
+                        bsonType: "object",
+                        required: ["StepID", "StepDescription", "StepStatus"],
+                        properties: {
+                            StepID: {
+                                bsonType: "string"
+                            },
+                            StepDescription: {
+                                bsonType: "string"
+                            },
+                            StepStatus: {
+                                enum: ["Pending", "Completed"]
+                            },
+                            SignedOff: {
+                                bsonType: "object",
+                                properties: {
+                                    Status: {
+                                        enum: ["Signed", "Not-Signed"]
+                                    },
+                                    Date: {
+                                        bsonType: "date"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                CreatedDate: {
+                    bsonType: "date",
+                    description: "CreatedDate must be a date"
+                },
+                DueDate: {
+                    bsonType: "date",
+                    description: "DueDate must be a date"
+                }
+            }
+        }
+    },
+    validationLevel: "moderate"
 });
 
-// Insert Phase 2 sample users
+print("Schema validation applied on Tasks collection.");
+
+// ========================================================================
+// 3. INDEX CREATION
+// ========================================================================
+
+// Create indexes for performance optimization
+db.Users.createIndex({ "Username": 1 }, { unique: true });
+db.Users.createIndex({ "Role": 1 });
+
+db.Tasks.createIndex({ "TaskID": 1 }, { unique: true });
+db.Tasks.createIndex({ "UserID": 1 });
+db.Tasks.createIndex({ "TaskStatus": 1 });
+db.Tasks.createIndex({ "DueDate": 1 });
+
+db.AuditLogs.createIndex({ "Username": 1 });
+db.AuditLogs.createIndex({ "Timestamp": -1 });
+
+print("Indexes created successfully.");
+
+// ========================================================================
+// 4. DATA INSERTION (CRUD - CREATE)
+// ========================================================================
+
+// Insert Users (10+ documents distributed across collections)
 db.Users.insertMany([
     {
-        UserID: "USR009",
-        Username: "emily_johnson",
-        Password: "emily123",
-        Role: "Agent"
+        Username: "Seif_Tamer",
+        Password: "123",
+        Role: "User"
     },
     {
-        UserID: "USR010",
-        Username: "david_lee",
-        Password: "david123",
-        Role: "Manager"
+        Username: "Ali_Ashraf",
+        Password: "123",
+        Role: "User"
     },
     {
-        UserID: "USR011",
-        Username: "lisa_martinez",
-        Password: "lisa123",
-        Role: "Supervisor"
+        Username: "Asaad_Ramzy",
+        Password: "123",
+        Role: "User"
+    },
+    {
+        Username: "Adel_Waheed",
+        Password: "123",
+        Role: "User"
+    },
+    {
+        Username: "Abdelrahman_Khaled",
+        Password: "123",
+        Role: "Admin"
+    },
+    {
+        Username: "testt",
+        Password: "123",
+        Role: "User"
     }
 ]);
 
-print("✓ 3 additional users inserted for Phase 2\n");
+print("Users inserted successfully.");
 
-// Fetch new user IDs
-var U7 = db.Users.findOne({ UserID: "USR009" })._id;
-var U8 = db.Users.findOne({ UserID: "USR010" })._id;
-var U9 = db.Users.findOne({ UserID: "USR011" })._id;
+// Get User IDs for task assignment
+var user1 = db.Users.findOne({ Username: "Seif_Tamer" })._id;
+var user2 = db.Users.findOne({ Username: "Ali_Ashraf" })._id;
+var user3 = db.Users.findOne({ Username: "Asaad_Ramzy" })._id;
+var user4 = db.Users.findOne({ Username: "Adel_Waheed" })._id;
+var admin = db.Users.findOne({ Username: "Abdelrahman_Khaled" })._id;
 
-print("=== INSERTING SAMPLE TASKS (Phase 2 Data) ===");
-
-// Insert Phase 2 sample tasks with correct format
+// Insert Tasks with embedded Steps documents
 db.Tasks.insertMany([
     {
-        TaskID: "TASK007",
-        UserID: U7,
-        Title: "Database Backup and Maintenance",
-        Description: "Perform weekly database backup and optimize queries",
-        TaskStatus: "In-Progress",
-        CreatedDate: new Date(),
-        DueDate: new Date("2025-01-20"),
-        Steps: [
-            {
-                StepID: "STEP017",
-                StepDescription: "Create full database backup",
-                StepStatus: "Completed",
-                SignedOff: { Status: "Signed", Date: new Date() }
-            },
-            {
-                StepID: "STEP018",
-                StepDescription: "Analyze slow queries",
-                StepStatus: "In-Progress",
-                SignedOff: { Status: "Not-Signed", Date: new Date() }
-            },
-            {
-                StepID: "STEP019",
-                StepDescription: "Implement query optimizations",
-                StepStatus: "Pending",
-                SignedOff: { Status: "Not-Signed", Date: new Date() }
-            }
-        ]
-    },
-    {
-        TaskID: "TASK008",
-        UserID: U8,
-        Title: "Quarterly Budget Planning",
-        Description: "Prepare budget forecast for Q1 2025",
+        TaskID: "TSK003",
+        UserID: user1,
+        Title: "API Documentation Update",
+        Description: "Update and review API documentation for v2.0 release.",
         TaskStatus: "Pending",
-        CreatedDate: new Date(),
-        DueDate: new Date("2025-02-01"),
         Steps: [
             {
-                StepID: "STEP020",
-                StepDescription: "Gather department budget requests",
+                StepID: "STP003-1",
+                StepDescription: "Review existing API documentation",
                 StepStatus: "Pending",
-                SignedOff: { Status: "Not-Signed", Date: new Date() }
+                SignedOff: {
+                    Status: "Not-Signed",
+                    Date: new Date()
+                }
             },
             {
-                StepID: "STEP021",
-                StepDescription: "Review historical spending",
+                StepID: "STP003-2",
+                StepDescription: "Update documentation with new endpoints",
                 StepStatus: "Pending",
-                SignedOff: { Status: "Not-Signed", Date: new Date() }
-            },
-            {
-                StepID: "STEP022",
-                StepDescription: "Create budget proposal",
-                StepStatus: "Pending",
-                SignedOff: { Status: "Not-Signed", Date: new Date() }
+                SignedOff: {
+                    Status: "Not-Signed",
+                    Date: new Date()
+                }
             }
-        ]
+        ],
+        CreatedDate: new Date("2025-12-15"),
+        DueDate: new Date("2025-01-10")
     },
     {
-        TaskID: "TASK009",
-        UserID: U9,
-        Title: "Employee Training Session",
-        Description: "Conduct training on new software tools",
+        TaskID: "TSK004",
+        UserID: user2,
+        Title: "Code Review Sprint",
+        Description: "Conduct code review for Q1 development sprint.",
         TaskStatus: "Completed",
-        CreatedDate: new Date(),
-        DueDate: new Date("2025-01-10"),
         Steps: [
             {
-                StepID: "STEP023",
-                StepDescription: "Prepare training materials",
+                StepID: "STP004-1",
+                StepDescription: "Review frontend code",
                 StepStatus: "Completed",
-                SignedOff: { Status: "Signed", Date: new Date() }
+                SignedOff: {
+                    Status: "Signed",
+                    Date: new Date("2025-12-08")
+                }
             },
             {
-                StepID: "STEP024",
-                StepDescription: "Schedule training sessions",
+                StepID: "STP004-2",
+                StepDescription: "Review backend code",
                 StepStatus: "Completed",
-                SignedOff: { Status: "Signed", Date: new Date() }
+                SignedOff: {
+                    Status: "Signed",
+                    Date: new Date("2025-12-09")
+                }
             },
             {
-                StepID: "STEP025",
-                StepDescription: "Conduct training and collect feedback",
+                StepID: "STP004-3",
+                StepDescription: "Document findings and recommendations",
                 StepStatus: "Completed",
-                SignedOff: { Status: "Signed", Date: new Date() }
+                SignedOff: {
+                    Status: "Signed",
+                    Date: new Date("2025-12-10")
+                }
             }
-        ]
+        ],
+        CreatedDate: new Date("2025-12-15"),
+        DueDate: new Date("2025-12-10")
     },
     {
-        TaskID: "TASK010",
-        UserID: U7,
-        Title: "Security Audit",
-        Description: "Review system security and update policies",
+        TaskID: "TSK005",
+        UserID: user3,
+        Title: "Client Presentation",
+        Description: "Prepare and deliver quarterly progress presentation to stakeholders.",
         TaskStatus: "In-Progress",
-        CreatedDate: new Date(),
-        DueDate: new Date("2025-01-30"),
         Steps: [
             {
-                StepID: "STEP026",
-                StepDescription: "Run security vulnerability scan",
+                StepID: "STP005-1",
+                StepDescription: "Gather project metrics and data",
                 StepStatus: "Completed",
-                SignedOff: { Status: "Signed", Date: new Date() }
+                SignedOff: {
+                    Status: "Signed",
+                    Date: new Date("2025-12-12")
+                }
             },
             {
-                StepID: "STEP027",
-                StepDescription: "Review access permissions",
-                StepStatus: "In-Progress",
-                SignedOff: { Status: "Not-Signed", Date: new Date() }
+                StepID: "STP005-2",
+                StepDescription: "Create presentation slides",
+                StepStatus: "Completed",
+                SignedOff: {
+                    Status: "Not-Signed",
+                    Date: new Date()
+                }
+            },
+            {
+                StepID: "STP005-3",
+                StepDescription: "Rehearse and deliver presentation",
+                StepStatus: "Pending",
+                SignedOff: {
+                    Status: "Not-Signed",
+                    Date: new Date()
+                }
             }
-        ]
+        ],
+        CreatedDate: new Date("2025-12-15"),
+        DueDate: new Date("2025-01-08")
+    },
+    {
+        TaskID: "TSK006",
+        UserID: user4,
+        Title: "Database Migration",
+        Description: "Migrate legacy database to MongoDB Atlas.",
+        TaskStatus: "Pending",
+        Steps: [
+            {
+                StepID: "STP006-1",
+                StepDescription: "Analyze current database schema",
+                StepStatus: "Pending",
+                SignedOff: {
+                    Status: "Not-Signed",
+                    Date: new Date()
+                }
+            },
+            {
+                StepID: "STP006-2",
+                StepDescription: "Design MongoDB schema",
+                StepStatus: "Pending",
+                SignedOff: {
+                    Status: "Not-Signed",
+                    Date: new Date()
+                }
+            },
+            {
+                StepID: "STP006-3",
+                StepDescription: "Execute migration scripts",
+                StepStatus: "Pending",
+                SignedOff: {
+                    Status: "Not-Signed",
+                    Date: new Date()
+                }
+            }
+        ],
+        CreatedDate: new Date("2025-12-16"),
+        DueDate: new Date("2025-01-20")
+    },
+    {
+        TaskID: "TSK007",
+        UserID: admin,
+        Title: "Security Audit",
+        Description: "Perform comprehensive security audit of the application.",
+        TaskStatus: "In-Progress",
+        Steps: [
+            {
+                StepID: "STP007-1",
+                StepDescription: "Review authentication mechanisms",
+                StepStatus: "Completed",
+                SignedOff: {
+                    Status: "Signed",
+                    Date: new Date("2025-12-14")
+                }
+            },
+            {
+                StepID: "STP007-2",
+                StepDescription: "Test for SQL injection vulnerabilities",
+                StepStatus: "Pending",
+                SignedOff: {
+                    Status: "Not-Signed",
+                    Date: new Date()
+                }
+            }
+        ],
+        CreatedDate: new Date("2025-12-13"),
+        DueDate: new Date("2025-12-25")
     }
 ]);
 
-print("✓ 4 additional tasks inserted for Phase 2\n");
+print("Tasks inserted successfully.");
 
-// ========================================
-// 4. READ OPERATIONS
-// ========================================
+// Insert Audit Logs
+db.AuditLogs.insertMany([
+    {
+        LogID: "LOG001",
+        Username: "Abdelrahman_Khaled",
+        Action: "Login",
+        Details: "Admin logged into the system",
+        Timestamp: new Date("2025-12-15T08:00:00Z")
+    },
+    {
+        LogID: "LOG002",
+        Username: "Seif_Tamer",
+        Action: "Create Task",
+        Details: "Created task: API Documentation Update",
+        Timestamp: new Date("2025-12-15T09:15:00Z")
+    },
+    {
+        LogID: "LOG003",
+        Username: "Ali_Ashraf",
+        Action: "Update Task",
+        Details: "Completed task: Code Review Sprint",
+        Timestamp: new Date("2025-12-15T14:30:00Z")
+    },
+    {
+        LogID: "LOG004",
+        Username: "Abdelrahman_Khaled",
+        Action: "Update User",
+        Details: "Updated user role for testt",
+        Timestamp: new Date("2025-12-16T10:00:00Z")
+    },
+    {
+        LogID: "LOG005",
+        Username: "Asaad_Ramzy",
+        Action: "Update Step",
+        Details: "Updated Step STP005-1 in Task TSK005",
+        Timestamp: new Date("2025-12-16T11:20:00Z")
+    }
+]);
+
+print("Audit logs inserted successfully.");
+
+// ========================================================================
+// 5. READ OPERATIONS (CRUD - READ)
+// ========================================================================
 
 print("\n=== READ OPERATIONS ===\n");
 
-print("--- Total Users in Database ---");
-print("Count: " + db.Users.countDocuments());
+// Read all users
+print("All Users:");
+printjson(db.Users.find().toArray());
 
-print("\n--- Total Tasks in Database ---");
-print("Count: " + db.Tasks.countDocuments());
+// Find tasks by status
+print("\nPending Tasks:");
+printjson(db.Tasks.find({ TaskStatus: "Pending" }).toArray());
 
-print("\n--- Sample: First 3 Users ---");
-db.Users.find().limit(3).pretty();
+// Find tasks for a specific user
+print("\nTasks for Seif_Tamer:");
+printjson(db.Tasks.find({ UserID: user1 }).toArray());
 
-print("\n--- Sample: First 3 Tasks ---");
-db.Tasks.find().limit(3).pretty();
+// Find tasks with due date before Jan 15, 2025
+print("\nTasks due before Jan 15, 2025:");
+printjson(db.Tasks.find({ DueDate: { $lt: new Date("2025-01-15") } }).toArray());
 
-print("\n--- Tasks with Status 'Completed' ---");
-db.Tasks.find({ TaskStatus: "Completed" }).pretty();
+// Find admin users
+print("\nAdmin Users:");
+printjson(db.Users.find({ Role: "Admin" }).toArray());
 
-print("\n--- Tasks assigned to Specific User ---");
-db.Tasks.find({ UserID: U7 }).pretty();
-
-// ========================================
-// 5. UPDATE OPERATIONS
-// ========================================
+// ========================================================================
+// 6. UPDATE OPERATIONS (CRUD - UPDATE)
+// ========================================================================
 
 print("\n=== UPDATE OPERATIONS ===\n");
 
-// Update user role
-print("--- Updating user USR009 role to 'Senior Agent' ---");
+// Update a user's password
 db.Users.updateOne(
-    { UserID: "USR009" },
-    { $set: { Role: "Senior Agent" } }
+    { Username: "testt" },
+    { $set: { Password: "newpassword123" } }
 );
-print("✓ User updated successfully\n");
+print("Updated password for user 'testt'");
 
 // Update task status
-print("--- Updating TASK008 status to 'In-Progress' ---");
 db.Tasks.updateOne(
-    { TaskID: "TASK008" },
+    { TaskID: "TSK003" },
     { $set: { TaskStatus: "In-Progress" } }
 );
-print("✓ Task updated successfully\n");
+print("Updated TaskStatus for TSK003 to In-Progress");
 
-// Update step status
-print("--- Updating step status in TASK007 ---");
+// Update a step status within a task
 db.Tasks.updateOne(
-    { TaskID: "TASK007", "Steps.StepID": "STEP018" },
-    { $set: { "Steps.$.StepStatus": "Completed", "Steps.$.SignedOff": { Status: "Signed", Date: new Date() } } }
+    { TaskID: "TSK006", "Steps.StepID": "STP006-1" },
+    {
+        $set: {
+            "Steps.$.StepStatus": "Completed",
+            "Steps.$.SignedOff.Status": "Signed",
+            "Steps.$.SignedOff.Date": new Date()
+        }
+    }
 );
-print("✓ Step updated successfully\n");
+print("Updated step STP006-1 in TSK006 to Completed");
 
-// Update multiple tasks (add due date)
-print("--- Adding DueDate to pending tasks ---");
-db.Tasks.updateMany(
-    { TaskStatus: "Pending" },
-    { $set: { DueDate: new Date("2025-01-15") } }
+// Update multiple users' role
+db.Users.updateMany(
+    { Role: "User" },
+    { $set: { LastModified: new Date() } }
 );
-print("✓ Multiple tasks updated\n");
+print("Added LastModified field to all User role accounts");
 
-// ========================================
-// 6. DELETE OPERATIONS
-// ========================================
+// ========================================================================
+// 7. DELETE OPERATIONS (CRUD - DELETE)
+// ========================================================================
 
 print("\n=== DELETE OPERATIONS ===\n");
 
-// Insert a test task to delete
-print("--- Inserting test task for deletion ---");
-var testUser = db.Users.findOne({ UserID: "USR009" });
-db.Tasks.insertOne({
-    TaskID: "TASK_DELETE_TEST",
-    UserID: testUser._id,
-    Title: "Test Task - To Be Deleted",
-    Description: "This task will be deleted",
-    TaskStatus: "Pending",
-    CreatedDate: new Date(),
-    Steps: [
-        {
-            StepID: "TEMP_STEP",
-            StepDescription: "Temporary step",
-            StepStatus: "Pending",
-            SignedOff: { Status: "Not-Signed", Date: new Date() }
-        }
-    ]
+// Delete old audit logs (example: logs older than 30 days)
+var thirtyDaysAgo = new Date();
+thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+var deleteResult = db.AuditLogs.deleteMany({
+    Timestamp: { $lt: thirtyDaysAgo }
 });
-print("✓ Test task inserted\n");
+print("Deleted " + deleteResult.deletedCount + " old audit logs");
 
-// Delete the test task
-print("--- Deleting the test task ---");
-db.Tasks.deleteOne({ TaskID: "TASK_DELETE_TEST" });
-print("✓ Task deleted successfully\n");
+// Delete a specific task
+db.Tasks.deleteOne({ TaskID: "TSK_TO_DELETE" });
+print("Attempted to delete task TSK_TO_DELETE");
 
-// ========================================
-// 7. AGGREGATION PIPELINES (4 Required)
-// ========================================
+// Delete completed tasks older than 60 days
+var sixtyDaysAgo = new Date();
+sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
-print("\n=== AGGREGATION PIPELINES - REPORTS ===\n");
+var oldCompletedTasks = db.Tasks.deleteMany({
+    TaskStatus: "Completed",
+    CreatedDate: { $lt: sixtyDaysAgo }
+});
+print("Deleted " + oldCompletedTasks.deletedCount + " old completed tasks");
 
-// AGGREGATION 1: Tasks Summary by Status
-print("╔════════════════════════════════════════════════╗");
-print("║  REPORT 1: Tasks Summary by Status            ║");
-print("╚════════════════════════════════════════════════╝\n");
-db.Tasks.aggregate([
-    {
-        $group: {
-            _id: "$TaskStatus",
-            count: { $sum: 1 },
-            taskTitles: { $push: "$Title" }
-        }
-    },
-    {
-        $sort: { count: -1 }
-    },
-    {
-        $project: {
-            _id: 0,
-            Status: "$_id",
-            TotalTasks: "$count",
-            TaskTitles: "$taskTitles"
-        }
-    }
-]).pretty();
+// ========================================================================
+// 8. AGGREGATION PIPELINES (4 REQUIRED REPORTS)
+// ========================================================================
 
-// AGGREGATION 2: User Task Workload with Details
-print("\n╔════════════════════════════════════════════════╗");
-print("║  REPORT 2: User Workload Analysis             ║");
-print("╚════════════════════════════════════════════════╝\n");
+print("\n=== AGGREGATION REPORTS ===\n");
+
+// AGGREGATION 1: User Task Summary Report
+// Purpose: Show how many tasks each user has and their completion rate
+print("\n--- Report 1: User Task Summary ---");
 db.Tasks.aggregate([
     {
         $group: {
             _id: "$UserID",
-            totalTasks: { $sum: 1 },
-            completedTasks: {
+            TotalTasks: { $sum: 1 },
+            CompletedTasks: {
                 $sum: { $cond: [{ $eq: ["$TaskStatus", "Completed"] }, 1, 0] }
             },
-            inProgressTasks: {
+            InProgressTasks: {
                 $sum: { $cond: [{ $eq: ["$TaskStatus", "In-Progress"] }, 1, 0] }
             },
-            pendingTasks: {
+            PendingTasks: {
                 $sum: { $cond: [{ $eq: ["$TaskStatus", "Pending"] }, 1, 0] }
             }
         }
@@ -324,26 +508,25 @@ db.Tasks.aggregate([
             from: "Users",
             localField: "_id",
             foreignField: "_id",
-            as: "userInfo"
+            as: "UserDetails"
         }
     },
     {
-        $unwind: "$userInfo"
+        $unwind: "$UserDetails"
     },
     {
         $project: {
             _id: 0,
-            UserID: "$_id",
-            Username: "$userInfo.Username",
-            Role: "$userInfo.Role",
-            TotalTasks: "$totalTasks",
-            Completed: "$completedTasks",
-            InProgress: "$inProgressTasks",
-            Pending: "$pendingTasks",
+            Username: "$UserDetails.Username",
+            Role: "$UserDetails.Role",
+            TotalTasks: 1,
+            CompletedTasks: 1,
+            InProgressTasks: 1,
+            PendingTasks: 1,
             CompletionRate: {
-                $round: [
-                    { $multiply: [{ $divide: ["$completedTasks", "$totalTasks"] }, 100] },
-                    2
+                $concat: [
+                    { $toString: { $round: [{ $multiply: [{ $divide: ["$CompletedTasks", "$TotalTasks"] }, 100] }, 2] } },
+                    "%"
                 ]
             }
         }
@@ -351,12 +534,54 @@ db.Tasks.aggregate([
     {
         $sort: { TotalTasks: -1 }
     }
-]).pretty();
+]).forEach(printjson);
 
-// AGGREGATION 3: Step Completion Statistics
-print("\n╔════════════════════════════════════════════════╗");
-print("║  REPORT 3: Step Completion Analysis           ║");
-print("╚════════════════════════════════════════════════╝\n");
+// AGGREGATION 2: Overdue Tasks Report
+// Purpose: Identify tasks that are past their due date
+print("\n--- Report 2: Overdue Tasks ---");
+db.Tasks.aggregate([
+    {
+        $match: {
+            DueDate: { $lt: new Date() },
+            TaskStatus: { $ne: "Completed" }
+        }
+    },
+    {
+        $lookup: {
+            from: "Users",
+            localField: "UserID",
+            foreignField: "_id",
+            as: "AssignedUser"
+        }
+    },
+    {
+        $unwind: "$AssignedUser"
+    },
+    {
+        $project: {
+            _id: 0,
+            TaskID: 1,
+            Title: 1,
+            AssignedTo: "$AssignedUser.Username",
+            DueDate: 1,
+            CurrentStatus: "$TaskStatus",
+            DaysOverdue: {
+                $dateDiff: {
+                    startDate: "$DueDate",
+                    endDate: new Date(),
+                    unit: "day"
+                }
+            }
+        }
+    },
+    {
+        $sort: { DaysOverdue: -1 }
+    }
+]).forEach(printjson);
+
+// AGGREGATION 3: Step Completion Analysis
+// Purpose: Analyze step completion across all tasks
+print("\n--- Report 3: Step Completion Analysis ---");
 db.Tasks.aggregate([
     {
         $unwind: "$Steps"
@@ -364,129 +589,72 @@ db.Tasks.aggregate([
     {
         $group: {
             _id: "$Steps.StepStatus",
-            totalSteps: { $sum: 1 },
-            sampleSteps: { $push: "$Steps.StepDescription" }
+            TotalSteps: { $sum: 1 },
+            SignedOffSteps: {
+                $sum: { $cond: [{ $eq: ["$Steps.SignedOff.Status", "Signed"] }, 1, 0] }
+            }
         }
     },
     {
         $project: {
             _id: 0,
             StepStatus: "$_id",
-            TotalSteps: "$totalSteps",
-            SampleDescriptions: { $slice: ["$sampleSteps", 3] }
+            TotalSteps: 1,
+            SignedOffSteps: 1,
+            SignOffRate: {
+                $concat: [
+                    { $toString: { $round: [{ $multiply: [{ $divide: ["$SignedOffSteps", "$TotalSteps"] }, 100] }, 2] } },
+                    "%"
+                ]
+            }
+        }
+    }
+]).forEach(printjson);
+
+// AGGREGATION 4: Monthly Activity Report (Audit Logs)
+// Purpose: Summarize system activity by action type
+print("\n--- Report 4: System Activity Summary ---");
+db.AuditLogs.aggregate([
+    {
+        $group: {
+            _id: "$Action",
+            ActionCount: { $sum: 1 },
+            UniqueUsers: { $addToSet: "$Username" },
+            LatestActivity: { $max: "$Timestamp" }
         }
     },
-    {
-        $sort: { TotalSteps: -1 }
-    }
-]).pretty();
-
-// AGGREGATION 4: Detailed Task Progress Report
-print("\n╔════════════════════════════════════════════════╗");
-print("║  REPORT 4: Task Progress with Completion %    ║");
-print("╚════════════════════════════════════════════════╝\n");
-db.Tasks.aggregate([
     {
         $project: {
             _id: 0,
-            TaskID: 1,
-            UserID: 1,
-            Title: 1,
-            TaskStatus: 1,
-            TotalSteps: { $size: "$Steps" },
-            CompletedSteps: {
-                $size: {
-                    $filter: {
-                        input: "$Steps",
-                        as: "step",
-                        cond: { $eq: ["$$step.StepStatus", "Completed"] }
-                    }
-                }
-            }
+            ActionType: "$_id",
+            TotalOccurrences: "$ActionCount",
+            UniqueUsersCount: { $size: "$UniqueUsers" },
+            MostRecentActivity: "$LatestActivity"
         }
     },
     {
-        $addFields: {
-            CompletionPercentage: {
-                $round: [
-                    {
-                        $multiply: [
-                            { $divide: ["$CompletedSteps", "$TotalSteps"] },
-                            100
-                        ]
-                    },
-                    1
-                ]
-            },
-            ProgressStatus: {
-                $cond: [
-                    { $eq: ["$CompletedSteps", "$TotalSteps"] },
-                    "✓ Complete",
-                    { $cond: [{ $gt: ["$CompletedSteps", 0] }, "⏳ In Progress", "⊗ Not Started"] }
-                ]
-            }
-        }
-    },
-    {
-        $sort: { CompletionPercentage: -1 }
+        $sort: { TotalOccurrences: -1 }
     }
-]).pretty();
+]).forEach(printjson);
 
-// ========================================
-// 8. INDEXES
-// ========================================
+// ========================================================================
+// 9. VERIFICATION QUERIES
+// ========================================================================
 
-print("\n╔════════════════════════════════════════════════╗");
-print("║  CREATING INDEXES                              ║");
-print("╚════════════════════════════════════════════════╝\n");
+print("\n=== DATABASE STATISTICS ===\n");
 
-// Index 1: UserID for faster task queries
-print("--- Creating index on Tasks.UserID ---");
-db.Tasks.createIndex({ UserID: 1 });
-print("✓ Index created on UserID\n");
+print("Total Users: " + db.Users.countDocuments());
+print("Total Tasks: " + db.Tasks.countDocuments());
+print("Total Audit Logs: " + db.AuditLogs.countDocuments());
 
-// Index 2: Compound index on TaskStatus and UserID
-print("--- Creating compound index ---");
-db.Tasks.createIndex({ TaskStatus: 1, UserID: 1 });
-print("✓ Compound index created on TaskStatus + UserID\n");
+print("\nTask Status Distribution:");
+printjson(db.Tasks.aggregate([
+    {
+        $group: {
+            _id: "$TaskStatus",
+            Count: { $sum: 1 }
+        }
+    }
+]).toArray());
 
-// Index 3: Text index for searching
-print("--- Creating text index for search ---");
-db.Tasks.createIndex({ Title: "text", Description: "text" });
-print("✓ Text index created for full-text search\n");
-
-// Index 4: Unique index on Username
-print("--- Creating unique index on Users.Username ---");
-db.Users.createIndex({ Username: 1 }, { unique: true });
-print("✓ Unique index created on Username\n");
-
-// Index 5: DueDate index
-print("--- Creating index on Tasks.DueDate ---");
-db.Tasks.createIndex({ DueDate: 1 });
-print("✓ Index created on DueDate\n");
-
-// Show all indexes
-print("\n--- All Indexes on 'Tasks' Collection ---");
-printjson(db.Tasks.getIndexes());
-
-print("\n--- All Indexes on 'Users' Collection ---");
-printjson(db.Users.getIndexes());
-
-// ========================================
-// 9. FINAL SUMMARY
-// ========================================
-
-print("\n╔════════════════════════════════════════════════╗");
-print("║  SCRIPT EXECUTION COMPLETED                    ║");
-print("╚════════════════════════════════════════════════╝\n");
-
-print("Database: TaskManagmentDB");
-print("─────────────────────────────────────────────────");
-print("Collections:");
-print("  • Users: " + db.Users.countDocuments() + " documents");
-print("  • Tasks: " + db.Tasks.countDocuments() + " documents");
-print("  • AuditLogs: " + db.AuditLogs.countDocuments() + " documents");
-print("\nIndexes Created: 5 total");
-print("Aggregation Reports: 4 completed");
-print("CRUD Operations: ✓ All tested");
-print("\n✓ All Phase 2 Requirements Met!");
+print("\n=== Script Execution Completed Successfully ===");
