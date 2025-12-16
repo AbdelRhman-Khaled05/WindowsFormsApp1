@@ -13,6 +13,14 @@ namespace TaskManagementApp
         private IMongoCollection<BsonDocument> _tasks;
         private IMongoCollection<BsonDocument> _auditLogs;
 
+        // Helper class for ComboBox binding
+        private class ComboItem
+        {
+            public string Text { get; set; }
+            public string Value { get; set; }
+            public override string ToString() => Text;
+        }
+
         public UpdateForm()
         {
             InitializeComponent();
@@ -26,18 +34,27 @@ namespace TaskManagementApp
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Mongo connection failed: " + ex.Message);
+                MessageBox.Show($"Mongo connection failed:\n{ex.Message}",
+                    "Connection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void UpdateForm_Load(object sender, EventArgs e)
         {
-            LoadUsers();
-            LoadTasks();
+            try
+            {
+                LoadUsers();
+                LoadTasks();
 
-            // Initialize dropdowns
-            if (cmbStepStatus.Items.Count > 0)
-                cmbStepStatus.SelectedIndex = 0;
+                // Initialize dropdowns
+                if (cmbStepStatus.Items.Count > 0)
+                    cmbStepStatus.SelectedIndex = 0;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Load error:\n{ex.Message}",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         // ============================= USER MANAGEMENT =============================
@@ -47,14 +64,34 @@ namespace TaskManagementApp
             try
             {
                 cmbUsers.Items.Clear();
+
                 var allUsers = _users.Find(new BsonDocument()).ToList();
 
+                if (allUsers.Count == 0)
+                {
+                    MessageBox.Show("No users found in database.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
                 foreach (var user in allUsers)
-                    cmbUsers.Items.Add(user["_id"].ToString());
+                {
+                    string username = user.GetValue("Username", "Unknown").ToString();
+                    string userId = user["_id"].ToString();
+
+                    cmbUsers.Items.Add(new ComboItem
+                    {
+                        Text = $"{username} ({userId.Substring(0, Math.Min(8, userId.Length))}...)",
+                        Value = userId
+                    });
+                }
+
+                if (cmbUsers.Items.Count > 0)
+                    cmbUsers.SelectedIndex = 0;
             }
             catch (Exception ex)
             {
-                MessageBox.Show("LoadUsers error: " + ex.Message);
+                MessageBox.Show($"LoadUsers error:\n{ex.Message}",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -64,7 +101,11 @@ namespace TaskManagementApp
 
             try
             {
-                var id = ObjectId.Parse(cmbUsers.SelectedItem.ToString());
+                var selectedItem = cmbUsers.SelectedItem as ComboItem;
+                if (selectedItem == null) return;
+
+                string userId = selectedItem.Value;
+                var id = ObjectId.Parse(userId);
                 var user = _users.Find(Builders<BsonDocument>.Filter.Eq("_id", id)).FirstOrDefault();
 
                 if (user != null)
@@ -76,7 +117,7 @@ namespace TaskManagementApp
             }
             catch (Exception ex)
             {
-                MessageBox.Show("User load error: " + ex.Message);
+                MessageBox.Show($"User load error:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -96,9 +137,20 @@ namespace TaskManagementApp
                 return;
             }
 
+            // Validate role is Admin or User only
+            if (txtRole.Text != "Admin" && txtRole.Text != "User")
+            {
+                MessageBox.Show("Role must be 'Admin' or 'User'.");
+                return;
+            }
+
             try
             {
-                var id = ObjectId.Parse(cmbUsers.SelectedItem.ToString());
+                var selectedItem = cmbUsers.SelectedItem as ComboItem;
+                if (selectedItem == null) return;
+
+                string userId = selectedItem.Value;
+                var id = ObjectId.Parse(userId);
 
                 var update = Builders<BsonDocument>.Update
                     .Set("Username", txtUsername.Text)
@@ -108,11 +160,12 @@ namespace TaskManagementApp
                 _users.UpdateOne(Builders<BsonDocument>.Filter.Eq("_id", id), update);
 
                 LogAudit(LoginForm.LoggedInUsername, "Update User", $"Updated user: {txtUsername.Text}");
-                MessageBox.Show("User updated!");
+                MessageBox.Show("User updated successfully!");
+                LoadUsers(); // Refresh list
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Update user error: " + ex.Message);
+                MessageBox.Show($"Update user error:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -123,17 +176,34 @@ namespace TaskManagementApp
             try
             {
                 cmbTasks.Items.Clear();
+
                 var tasks = _tasks.Find(new BsonDocument()).ToList();
+
+                if (tasks.Count == 0)
+                {
+                    MessageBox.Show("No tasks found in database.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
 
                 foreach (var task in tasks)
                 {
-                    var tid = task.Contains("TaskID") ? task["TaskID"].ToString() : task["_id"].ToString();
-                    cmbTasks.Items.Add(tid);
+                    string tid = task.Contains("TaskID") ? task["TaskID"].ToString() : task["_id"].ToString();
+                    string title = task.GetValue("Title", "Untitled").ToString();
+
+                    cmbTasks.Items.Add(new ComboItem
+                    {
+                        Text = $"{tid} - {title}",
+                        Value = tid
+                    });
                 }
+
+                if (cmbTasks.Items.Count > 0)
+                    cmbTasks.SelectedIndex = 0;
             }
             catch (Exception ex)
             {
-                MessageBox.Show("LoadTasks error: " + ex.Message);
+                MessageBox.Show($"LoadTasks error:\n{ex.Message}",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -143,7 +213,10 @@ namespace TaskManagementApp
 
             try
             {
-                string taskId = cmbTasks.SelectedItem.ToString();
+                var selectedItem = cmbTasks.SelectedItem as ComboItem;
+                if (selectedItem == null) return;
+
+                string taskId = selectedItem.Value;
 
                 BsonDocument task =
                     _tasks.Find(Builders<BsonDocument>.Filter.Eq("TaskID", taskId)).FirstOrDefault()
@@ -172,7 +245,7 @@ namespace TaskManagementApp
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Task load error: " + ex.Message);
+                MessageBox.Show($"Task load error:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -187,7 +260,6 @@ namespace TaskManagementApp
             {
                 var step = s.AsBsonDocument;
 
-                // Handle both field name variations
                 string id = step.GetValue("StepID", "").ToString();
                 string desc = step.GetValue("StepDescription", "").ToString();
                 string status = step.GetValue("StepStatus", "Pending").ToString();
@@ -211,9 +283,19 @@ namespace TaskManagementApp
                 return;
             }
 
+            // Validate title length
+            if (txtTaskTitle.Text.Length < 5)
+            {
+                MessageBox.Show("Title must be at least 5 characters.");
+                return;
+            }
+
             try
             {
-                string tid = cmbTasks.SelectedItem.ToString();
+                var selectedItem = cmbTasks.SelectedItem as ComboItem;
+                if (selectedItem == null) return;
+
+                string tid = selectedItem.Value;
 
                 if (!ObjectId.TryParse(txtTaskUserID.Text, out ObjectId userId))
                 {
@@ -232,12 +314,13 @@ namespace TaskManagementApp
                     update
                 );
 
-                MessageBox.Show("Task updated!");
+                MessageBox.Show("Task updated successfully!");
                 LogAudit(LoginForm.LoggedInUsername, "Update Task", $"Updated task: {tid}");
+                LoadTasks(); // Refresh list
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Update task error: " + ex.Message);
+                MessageBox.Show($"Update task error:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -255,7 +338,7 @@ namespace TaskManagementApp
             string status = row.Cells["Status"].Value?.ToString() ?? "Pending";
             if (cmbStepStatus.Items.Contains(status))
                 cmbStepStatus.SelectedItem = status;
-            else
+            else if (cmbStepStatus.Items.Count > 0)
                 cmbStepStatus.SelectedIndex = 0;
         }
 
@@ -278,9 +361,18 @@ namespace TaskManagementApp
                 return;
             }
 
+            if (cmbStepStatus.SelectedItem == null)
+            {
+                MessageBox.Show("Please select a step status.");
+                return;
+            }
+
             try
             {
-                string taskID = cmbTasks.SelectedItem.ToString();
+                var selectedItem = cmbTasks.SelectedItem as ComboItem;
+                if (selectedItem == null) return;
+
+                string taskID = selectedItem.Value;
                 string stepID = txtStepID.Text.Trim();
 
                 var task = _tasks.Find(Builders<BsonDocument>.Filter.Eq("TaskID", taskID)).FirstOrDefault();
@@ -307,7 +399,7 @@ namespace TaskManagementApp
                 {
                     { "StepID", stepID },
                     { "StepDescription", txtStepDescription.Text },
-                    { "StepStatus", cmbStepStatus.SelectedItem?.ToString() ?? "Pending" },
+                    { "StepStatus", cmbStepStatus.SelectedItem.ToString() },
                     { "SignedOff", new BsonDocument
                         {
                             { "Status", "Not-Signed" },
@@ -357,7 +449,7 @@ namespace TaskManagementApp
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error updating step: " + ex.Message);
+                MessageBox.Show($"Error updating step:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -378,7 +470,7 @@ namespace TaskManagementApp
                 _auditLogs.InsertOne(new BsonDocument
                 {
                     { "LogID", Guid.NewGuid().ToString() },
-                    { "Username", username },
+                    { "Username", username ?? "Unknown" },
                     { "Action", action },
                     { "Details", details },
                     { "Timestamp", DateTime.UtcNow }
@@ -386,7 +478,7 @@ namespace TaskManagementApp
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Audit log error: " + ex.Message);
+                Console.WriteLine($"Audit log error: {ex.Message}");
             }
         }
 
@@ -394,7 +486,7 @@ namespace TaskManagementApp
         {
             LoadUsers();
             LoadTasks();
-            MessageBox.Show("Refreshed.");
+            MessageBox.Show("Data refreshed successfully!");
         }
     }
 }

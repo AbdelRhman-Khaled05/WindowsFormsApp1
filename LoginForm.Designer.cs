@@ -169,6 +169,7 @@ namespace TaskManagementApp
             this.Name = "LoginForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Login - Task Management System";
+            this.Load += new System.EventHandler(this.LoginForm_Load);
             this.mainPanel.ResumeLayout(false);
             this.mainPanel.PerformLayout();
             this.ResumeLayout(false);

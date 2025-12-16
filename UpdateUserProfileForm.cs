@@ -102,5 +102,10 @@ namespace TaskManagementApp
                 Console.WriteLine("Audit log error: " + ex.Message);
             }
         }
+
+        private void UpdateUserProfileForm_Load(object sender, EventArgs e)
+        {
+
+        }
     }
 }

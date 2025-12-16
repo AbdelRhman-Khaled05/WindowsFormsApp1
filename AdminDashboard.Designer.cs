@@ -228,6 +228,7 @@ namespace TaskManagementApp
             this.Name = "AdminDashboard";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Admin Dashboard";
+            this.Load += new System.EventHandler(this.AdminDashboard_Load);
             this.sidebar.ResumeLayout(false);
             this.header.ResumeLayout(false);
             this.header.PerformLayout();
